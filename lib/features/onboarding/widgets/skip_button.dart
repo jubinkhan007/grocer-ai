@@ -15,13 +15,13 @@ class SkipButton extends GetView<OnboardingController> {
         children: [
           Text(
             'SKIP',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
           ),
           SizedBox(width: 4),
-          Icon(Icons.chevron_right, color: Colors.white),
+          Icon(Icons.chevron_right, color: Colors.black),
         ],
       ),
-      style: TextButton.styleFrom(foregroundColor: Colors.white),
+      style: TextButton.styleFrom(foregroundColor: Colors.black),
     );
   }
 }

@@ -30,7 +30,7 @@ class OnboardingView extends GetView<OnboardingController> {
             // Top strip (teal) with SKIP
             Container(
               height: 44,
-              color: _topTeal,
+              color: Colors.transparent,
               width: double.infinity,
               alignment: Alignment.centerRight,
               child: const Padding(
