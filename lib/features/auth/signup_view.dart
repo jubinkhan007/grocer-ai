@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:grocer_ai/app/app_routes.dart';
-import 'login_controller.dart';
+import 'signup_controller.dart';
 
-/// Colors that match the Figma
 const _topTeal = Color(0xFF0C3E3D);
 const _pageBg = Color(0xFFF1F4F6);
 const _hint = Color(0xFF9AA4AE);
 const _divider = Color(0xFFE1E6EA);
 
-class LoginView extends GetView<LoginController> {
-  const LoginView({super.key});
+class SignUpView extends GetView<SignUpController> {
+  const SignUpView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Dark icons on the light header arc, like the frame
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -29,7 +26,7 @@ class LoginView extends GetView<LoginController> {
       body: SafeArea(
         child: Column(
           children: const [
-            _HeaderArc(), // exact Figma-style arc + logo
+            _HeaderArc(), // same shallow arc + centered logo
             Expanded(child: _FormArea()),
           ],
         ),
@@ -38,6 +35,7 @@ class LoginView extends GetView<LoginController> {
   }
 }
 
+/// Arc header that matches the mock exactly (elliptical radius)
 class _HeaderArc extends StatelessWidget {
   const _HeaderArc();
 
@@ -47,10 +45,7 @@ class _HeaderArc extends StatelessWidget {
 
     return Stack(
       children: [
-        // page background under the arc
         Container(height: 156, color: _pageBg),
-
-        // the shallow white arc (uses elliptical radius to match Figma)
         Align(
           alignment: Alignment.topCenter,
           child: Container(
@@ -65,8 +60,6 @@ class _HeaderArc extends StatelessWidget {
             ),
           ),
         ),
-
-        // centered logo sitting on the arc
         Positioned.fill(
           child: Align(
             alignment: Alignment.bottomCenter,
@@ -74,7 +67,7 @@ class _HeaderArc extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: Image.asset(
                 'assets/images/logo_grocerai.png',
-                width: 210, // slightly larger to match the composition
+                width: 210,
                 fit: BoxFit.contain,
               ),
             ),
@@ -85,12 +78,12 @@ class _HeaderArc extends StatelessWidget {
   }
 }
 
-class _FormArea extends GetView<LoginController> {
+class _FormArea extends GetView<SignUpController> {
   const _FormArea();
 
   @override
   Widget build(BuildContext context) {
-    final h1 = Theme.of(context).textTheme.headlineMedium?.copyWith(
+    final title = Theme.of(context).textTheme.headlineMedium?.copyWith(
       fontSize: 28,
       fontWeight: FontWeight.w700,
       color: const Color(0xFF33363E),
@@ -101,16 +94,33 @@ class _FormArea extends GetView<LoginController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Welcome Back', style: h1),
+          Text('Create Account', style: title),
           const SizedBox(height: 24),
+
+          // Name
+          _FieldWithBubble(
+            errorTextRx: controller.nameError,
+            child: _RoundedField(
+              controller: controller.nameCtrl,
+              hint: 'Enter your name',
+              prefix: _iconAsset(
+                'assets/icons/ic_user.png',
+                Icons.person_outline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Email
           _FieldWithBubble(
             errorTextRx: controller.emailError,
             child: _RoundedField(
               controller: controller.emailCtrl,
-              hint: 'zararahman@gmail.com', // matches mock placeholder style
-              prefix: Image.asset('assets/icons/ic_mail.png', width: 22),
+              hint: 'Enter your email',
+              prefix: _iconAsset(
+                'assets/icons/ic_mail.png',
+                Icons.mail_outline,
+              ),
               keyboardType: TextInputType.emailAddress,
             ),
           ),
@@ -122,8 +132,11 @@ class _FormArea extends GetView<LoginController> {
             child: Obx(
               () => _RoundedField(
                 controller: controller.passCtrl,
-                hint: '••••••••••',
-                prefix: Image.asset('assets/icons/ic_lock.png', width: 22),
+                hint: 'Enter your password',
+                prefix: _iconAsset(
+                  'assets/icons/ic_lock.png',
+                  Icons.lock_outline,
+                ),
                 obscureText: controller.obscure.value,
                 suffix: IconButton(
                   splashRadius: 22,
@@ -138,8 +151,22 @@ class _FormArea extends GetView<LoginController> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
 
-          const SizedBox(height: 10),
+          // Referral (optional)
+          _FieldWithBubble(
+            errorTextRx: controller.referralErr,
+            child: _RoundedField(
+              controller: controller.referralCtrl,
+              hint: 'Enter your referral code',
+              prefix: _iconAsset(
+                'assets/icons/ic_referral.png',
+                Icons.person_2_outlined,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
@@ -159,7 +186,7 @@ class _FormArea extends GetView<LoginController> {
           Obx(
             () => SizedBox(
               width: double.infinity,
-              height: 64, // bigger capsule like Figma
+              height: 64,
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: _topTeal,
@@ -167,7 +194,7 @@ class _FormArea extends GetView<LoginController> {
                     borderRadius: BorderRadius.circular(44),
                   ),
                 ),
-                onPressed: controller.loading.value ? null : controller.signIn,
+                onPressed: controller.loading.value ? null : controller.signUp,
                 child: controller.loading.value
                     ? const SizedBox(
                         width: 22,
@@ -178,7 +205,7 @@ class _FormArea extends GetView<LoginController> {
                         ),
                       )
                     : const Text(
-                        'Sign In',
+                        'Sign Up',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -188,49 +215,23 @@ class _FormArea extends GetView<LoginController> {
             ),
           ),
 
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              const Expanded(
-                child: Divider(endIndent: 12, thickness: 1, color: _divider),
-              ),
-              Text(
-                'Or Continue with',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6B737C)),
-              ),
-              const Expanded(
-                child: Divider(indent: 12, thickness: 1, color: _divider),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _SocialBtn(
-                asset: 'assets/icons/ic_google.png',
-                onTap: controller.google,
-              ),
-              const SizedBox(width: 20),
-              _SocialBtn(
-                asset: 'assets/icons/ic_facebook.png',
-                onTap: controller.facebook,
-              ),
-              const SizedBox(width: 20),
-              _SocialBtn(
-                asset: 'assets/icons/ic_apple.png',
-                onTap: controller.apple,
-              ),
-            ],
-          ),
-
           const SizedBox(height: 28),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [Text("Don’t have an Account?"), _SignUpLink()],
+            children: [
+              const Text("Already have an Account?"),
+              TextButton(
+                onPressed: () =>
+                    Get.back(), // or navigate by name to your login route
+                child: const Text(
+                  '  Sign In',
+                  style: TextStyle(
+                    color: _topTeal,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -238,7 +239,7 @@ class _FormArea extends GetView<LoginController> {
   }
 }
 
-/// rounded, filled text field with subtle elevation to match the pill look
+/// pill input with subtle drop shadow (matches Figma)
 class _RoundedField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -283,7 +284,7 @@ class _RoundedField extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 20,
-        ), // ~64 tall
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(36),
           borderSide: BorderSide.none,
@@ -292,14 +293,13 @@ class _RoundedField extends StatelessWidget {
           borderRadius: BorderRadius.circular(36),
           borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(36),
-          borderSide: const BorderSide(color: _topTeal, width: 1.4),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(36)),
+          borderSide: BorderSide(color: _topTeal, width: 1.4),
         ),
       ),
     );
 
-    // Soft shadow like the mock (very subtle)
     return DecoratedBox(
       decoration: const BoxDecoration(
         boxShadow: [
@@ -315,7 +315,7 @@ class _RoundedField extends StatelessWidget {
   }
 }
 
-/// Error bubble that pins to the field’s right edge (copy text from controller)
+/// little orange bubble error (same style as your login)
 class _FieldWithBubble extends StatelessWidget {
   final Widget child;
   final RxnString errorTextRx;
@@ -375,72 +375,11 @@ class _FieldWithBubble extends StatelessWidget {
   }
 }
 
-class _OrContinue extends StatelessWidget {
-  const _OrContinue();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: Divider(endIndent: 12, thickness: 1, color: _divider),
-        ),
-        Text(
-          'Or Continue with',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6B737C)),
-        ),
-        const Expanded(
-          child: Divider(indent: 12, thickness: 1, color: _divider),
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialBtn extends StatelessWidget {
-  final String asset;
-  final VoidCallback onTap;
-  const _SocialBtn({required this.asset, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(32),
-      child: Ink(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFEAEFF2)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Image.asset(asset, width: 26, height: 26, fit: BoxFit.contain),
-        ),
-      ),
-    );
-  }
-}
-
-class _SignUpLink extends StatelessWidget {
-  const _SignUpLink();
-
-  @override
-  Widget build(BuildContext context) {
-    return // in LoginView -> "Sign Up" tap
-    TextButton(
-      onPressed: () => Get.toNamed(Routes.signup), // <-- use toNamed (PUSH)
-      child: const Text('Sign Up' /* ... */),
-    );
-  }
+/// Tries to use an asset; falls back to a Material icon if the asset isn’t found
+Widget _iconAsset(String assetPath, IconData fallback) {
+  return Image.asset(
+    assetPath,
+    width: 22,
+    errorBuilder: (_, __, ___) => Icon(fallback, size: 22, color: _topTeal),
+  );
 }

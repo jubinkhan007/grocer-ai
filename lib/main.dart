@@ -6,6 +6,8 @@ import 'package:grocer_ai/app/app_routes.dart';
 import 'package:grocer_ai/core/theme/themes.dart';
 import 'package:grocer_ai/features/auth/login_binding.dart';
 import 'package:grocer_ai/features/auth/login_view.dart';
+import 'package:grocer_ai/features/auth/signup_bidning.dart';
+import 'package:grocer_ai/features/auth/signup_view.dart';
 import 'package:grocer_ai/features/onboarding/onboarding_binding.dart';
 import 'package:grocer_ai/features/splash/splash_view.dart';
 
@@ -34,6 +36,11 @@ class GrocerAiApp extends StatelessWidget {
           name: Routes.login,
           page: () => const LoginView(),
           binding: LoginBinding(),
+        ),
+        GetPage(
+          name: Routes.signup,
+          page: () => const SignUpView(),
+          binding: SignUpBinding(),
         ),
       ],
     );

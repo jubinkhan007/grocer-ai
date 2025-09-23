@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/auth/login_binding.dart';
 import 'package:grocer_ai/features/auth/login_view.dart';
+import 'package:grocer_ai/features/auth/signup_bidning.dart';
+import 'package:grocer_ai/features/auth/signup_view.dart';
 // import '../features/auth/views/splash_view.dart';
 // import '../features/auth/views/login_view.dart';
 // import '../features/home/views/home_view.dart';
@@ -14,6 +16,7 @@ abstract class Routes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const login = '/login';
+  static const signup = '/signup';
   static const home = '/home';
   static const cart = '/cart';
   static const compare = '/compare';
@@ -36,6 +39,11 @@ class AppPages {
       name: Routes.login,
       page: () => const LoginView(),
       binding: LoginBinding(),
+    ),
+    GetPage(
+      name: Routes.signup,
+      page: () => const SignUpView(),
+      binding: SignUpBinding(),
     ),
   ];
 }
