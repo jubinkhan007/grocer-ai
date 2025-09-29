@@ -148,9 +148,15 @@ class _FormArea extends GetView<LoginController> {
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(0, 0),
               ),
-              child: const Text(
-                'Forgot Password?',
-                style: TextStyle(color: _topTeal, fontWeight: FontWeight.w700),
+              child: TextButton(
+                onPressed: () => Get.toNamed(Routes.forgot),
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: Color(0xFF0C3E3D),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
           ),

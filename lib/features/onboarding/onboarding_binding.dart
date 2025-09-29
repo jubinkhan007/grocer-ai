@@ -1,9 +1,9 @@
 import 'package:get/get.dart';
-import 'package:grocer_ai/features/auth/login_binding.dart'; // Import LoginBinding
+import 'package:grocer_ai/features/auth/login/login_binding.dart'; // Import LoginBinding
 import 'onboarding_controller.dart';
 import '../../app/app_routes.dart';
 import 'onboarding_view.dart';
-import '../auth/login_view.dart';
+import '../auth/login/login_view.dart';
 
 class OnboardingBinding extends Bindings {
   @override
