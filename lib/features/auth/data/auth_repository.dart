@@ -99,4 +99,53 @@ class AuthRepository {
           : ApiFailure.fromDioError(e);
     }
   }
+
+  /// ---- NEW ----
+  /// POST /api/v1/auth/register/
+  /// Body: {name, email, password, mobile_number?, referral_code?}
+  /// Returns tokens on success (201).
+  Future<AuthTokens> register({
+    required String name,
+    required String email,
+    required String password,
+    String? mobileNumber,
+    String? referralCode,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'name': name,
+        'email': email,
+        'password': password,
+      };
+      if (mobileNumber?.isNotEmpty == true)
+        body['mobile_number'] = mobileNumber;
+      if (referralCode?.isNotEmpty == true)
+        body['referral_code'] = referralCode;
+
+      final res = await _client.postJson<Map<String, dynamic>>(
+        ApiPath.register,
+        body,
+      );
+
+      final data = res.data;
+      if (data == null) {
+        throw ApiFailure(
+          message: 'Empty response',
+          code: 'empty_body',
+          status: res.statusCode,
+        );
+      }
+
+      // Swagger shows access_token & refresh_token in the response.
+      final tokens = AuthTokens.fromJson(data);
+      _box.write('auth_token', tokens.accessToken);
+      _box.write('refresh_token', tokens.refreshToken);
+      return tokens;
+    } on DioException catch (e) {
+      final failure = e.error is ApiFailure
+          ? e.error as ApiFailure
+          : ApiFailure.fromDioError(e);
+      throw failure;
+    }
+  }
 }

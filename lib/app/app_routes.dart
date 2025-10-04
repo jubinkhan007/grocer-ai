@@ -1,6 +1,13 @@
 // lib/app/app_routes.dart
 
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/preferences/preferences_binding.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_budget_view.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_cuisine_view.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_diet_view.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_frequency_view.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_grocers_view.dart';
+import 'package:grocer_ai/features/preferences/views/prefs_household_view.dart';
 import 'package:grocer_ai/features/splash/splash_view.dart';
 import 'package:grocer_ai/features/onboarding/onboarding_binding.dart';
 import 'package:grocer_ai/features/onboarding/onboarding_view.dart';
@@ -28,6 +35,13 @@ abstract class Routes {
   static const forgot = '/forgot';
   static const otp = '/forgot/otp';
   static const reset = '/forgot/reset';
+  static const prefsStart = '/prefs';
+  static const prefsGrocers = '/prefs/grocers';
+  static const prefsHouse = '/prefs/household';
+  static const prefsDiet = '/prefs/diet';
+  static const prefsCuisine = '/prefs/cuisine';
+  static const prefsFreq = '/prefs/frequency';
+  static const prefsBudget = '/prefs/budget';
 }
 
 class AppPages {
@@ -68,5 +82,17 @@ class AppPages {
       page: () => const ResetView(),
       binding: ForgotBinding(),
     ),
+
+    GetPage(
+      name: Routes.prefsStart,
+      page: () => const PrefsGrocersView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(name: Routes.prefsGrocers, page: () => const PrefsGrocersView()),
+    GetPage(name: Routes.prefsHouse, page: () => const PrefsHouseholdView()),
+    GetPage(name: Routes.prefsDiet, page: () => const PrefsDietView()),
+    GetPage(name: Routes.prefsCuisine, page: () => const PrefsCuisineView()),
+    GetPage(name: Routes.prefsFreq, page: () => const PrefsFrequencyView()),
+    GetPage(name: Routes.prefsBudget, page: () => const PrefsBudgetView()),
   ];
 }

@@ -22,4 +22,6 @@ class ApiPath {
       '$auth/password-reset/confirm/'; // POST {password, confirm_password, uid, token}
 
   static const String refresh = '$auth/refresh/'; // (future)
+
+  static const String register = '$auth/register/';
 }
