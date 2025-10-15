@@ -24,4 +24,7 @@ class ApiPath {
   static const String refresh = '$auth/refresh/'; // (future)
 
   static const String register = '$auth/register/';
+  static const String preferences = '/api/v1/preferences/'; // GET (paginated)
+  static const String userPreferences =
+      '/api/v1/user-preferences/'; // POST per screen
 }

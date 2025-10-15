@@ -1,4 +1,3 @@
-// lib/features/preferences/views/prefs_household_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../preferences_controller.dart';
@@ -59,12 +58,7 @@ class PrefsHouseholdView extends GetView<PreferencesController> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                _roundBtn(
-                  Icons.add,
-                  onTap: () {
-                    rx.value++;
-                  },
-                ),
+                _roundBtn(Icons.add, onTap: () => rx.value++),
               ],
             ),
           ),
@@ -91,6 +85,7 @@ class PrefsHouseholdView extends GetView<PreferencesController> {
 
   @override
   Widget build(BuildContext context) {
+    final c = controller;
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
@@ -98,35 +93,61 @@ class PrefsHouseholdView extends GetView<PreferencesController> {
           children: [
             const HeaderArc(),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Confirm your household',
-                      style: Theme.of(context).textTheme.headlineMedium!
-                          .copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF33363E),
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-                    _row('Adults', controller.adults),
-                    const SizedBox(height: 16),
-                    _row('Kids', controller.kids),
-                    const SizedBox(height: 16),
-                    _row('Pets', controller.pets),
-                  ],
-                ),
-              ),
+              child: Obx(() {
+                if (c.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final pref = c.household;
+                if (pref == null) {
+                  return const Center(
+                    child: Text('Unable to load household preferences.'),
+                  );
+                }
+
+                // Household numeric fields (Adults, Kids, Pets)
+                final adults = c.adultCount;
+                final kids = c.kidCount;
+                final pets = c.petCount;
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pref.title,
+                        style: Theme.of(context).textTheme.headlineMedium!
+                            .copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF33363E),
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      _row('Adults', adults),
+                      const SizedBox(height: 16),
+                      _row('Kids', kids),
+                      const SizedBox(height: 16),
+                      _row('Pets', pets),
+                    ],
+                  ),
+                );
+              }),
             ),
-            PrimaryBarButton(
-              onTap: () => Get.toNamed(Routes.prefsDiet),
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 26,
+
+            // ✅ Next button
+            Obx(
+              () => PrimaryBarButton(
+                onTap: () async {
+                  await c.submitHousehold();
+                  Get.toNamed(Routes.prefsDiet);
+                },
+                loading: c.loading.value,
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ],

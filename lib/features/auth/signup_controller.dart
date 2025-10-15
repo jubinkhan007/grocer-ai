@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:grocer_ai/app/app_routes.dart';
+import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
 import 'package:grocer_ai/features/auth/data/auth_repository.dart';
 
@@ -60,7 +61,8 @@ class SignUpController extends GetxController {
     try {
       loading.value = true;
 
-      await _repo.register(
+      // 🔹 Actually capture the returned tokens
+      final tokens = await _repo.register(
         name: nameCtrl.text.trim(),
         email: emailCtrl.text.trim(),
         password: passCtrl.text,
@@ -72,55 +74,40 @@ class SignUpController extends GetxController {
             : phoneCtrl.text.trim(),
       );
 
-      loading.value = false;
+      // 🔹 Persist the tokens again just to be sure (optional safety)
+      await _box.write('auth_token', tokens.accessToken);
+      await _box.write('refresh_token', tokens.refreshToken);
 
-      // We received tokens from register; treat as logged in.
-      // Navigate to the app shell (or wherever you want).
-      Get.offAllNamed(Routes.main);
+      // 🔹 Inject into DioClient immediately for in-memory auth
+      final dio = Get.find<DioClient>();
+      dio.dio.options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+
+      // ✅ Now user is fully authenticated, go to onboarding
+      Get.offAllNamed(Routes.locationPermission);
     } on ApiFailure catch (e) {
       loading.value = false;
 
-      // Map common server codes/messages to the right bubble.
-      switch (e.code) {
-        case 'email_exists':
-        case 'email_already_used':
-          emailError.value = 'Email already exists';
-          return;
-        case 'invalid_email':
-          emailError.value = e.message;
-          return;
-        case 'weak_password':
-        case 'invalid_password':
-          passError.value = e.message;
-          return;
-        case 'invalid_name':
-          nameError.value = e.message;
-          return;
-        case 'invalid_referral':
-        case 'referral_not_found':
-          referralError.value = e.message;
-          return;
-        case 'network_error':
-          Get.snackbar('No Internet', 'Check your connection and try again');
-          return;
-      }
+      final emailMsg = e.firstFor('email');
+      final passMsg = e.firstFor('password');
+      final nameMsg = e.firstFor('name');
+      final refMsg = e.firstFor('referral_code');
 
-      // Heuristic fallback by inspecting the message
-      final msg = (e.message ?? '').toLowerCase();
-      if (msg.contains('email')) {
-        emailError.value = e.message;
-      } else if (msg.contains('password')) {
-        passError.value = e.message;
-      } else if (msg.contains('name')) {
-        nameError.value = e.message;
-      } else if (msg.contains('referral')) {
-        referralError.value = e.message;
-      } else {
-        Get.snackbar('Sign Up failed', e.message ?? 'Unknown error');
+      if (emailMsg != null) emailError.value = emailMsg;
+      if (passMsg != null) passError.value = passMsg;
+      if (nameMsg != null) nameError.value = nameMsg;
+      if (refMsg != null) referralErr.value = refMsg;
+
+      if (emailMsg == null &&
+          passMsg == null &&
+          nameMsg == null &&
+          refMsg == null) {
+        Get.snackbar('Sign Up failed', e.message);
       }
-    } catch (_) {
+    } catch (e) {
       loading.value = false;
-      Get.snackbar('Sign Up failed', 'Unexpected error');
+      Get.snackbar('Sign Up failed', 'Unexpected error: $e');
+    } finally {
+      loading.value = false;
     }
   }
 

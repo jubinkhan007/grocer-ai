@@ -1,54 +1,92 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 
-/// Domain failure used across the app.
 class ApiFailure implements Exception {
-  final String message; // User-facing copy, e.g. "Email is wrong"
-  final String? code; // Machine code: e.g. "email_not_found"
-  final int? status; // HTTP status
-  final DioException? raw;
+  final String message; // primary message (detail/message)
+  final String? code; // optional machine code
+  final int? status; // http status
+  final Map<String, List<String>> fieldErrors; // email/password/... -> errors
 
-  ApiFailure({required this.message, this.code, this.status, this.raw});
+  ApiFailure({
+    required this.message,
+    this.code,
+    this.status,
+    Map<String, List<String>>? fieldErrors,
+  }) : fieldErrors = fieldErrors ?? const {};
 
-  /// Build from DioException, normalize common cases.
-  factory ApiFailure.fromDioError(DioException e) {
-    // Network / timeout
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.sendTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.connectionError) {
-      return ApiFailure(
-        message: 'No internet connection',
-        code: 'network_error',
-        raw: e,
-      );
+  /// Convenience
+  String? firstFor(String field) {
+    final list = fieldErrors[field];
+    return (list != null && list.isNotEmpty) ? list.first : null;
+  }
+
+  static ApiFailure fromDioError(DioException e) {
+    String msg = 'Something went wrong';
+    String? code;
+    int? status = e.response?.statusCode;
+    final Map<String, List<String>> fields = {};
+
+    dynamic data = e.response?.data;
+
+    // Sometimes backend sends a string body
+    if (data is String) {
+      try {
+        data = json.decode(data);
+      } catch (_) {}
     }
 
-    final status = e.response?.statusCode;
-    final data = e.response?.data;
-
-    // Your Swagger error: { "detail": "...", "code": "..." }
     if (data is Map) {
-      final detail =
-          (data['detail'] ?? data['message'] ?? 'Something went wrong')
-              .toString();
-      final code = data['code']?.toString();
-      return ApiFailure(message: detail, code: code, status: status, raw: e);
+      // Prefer structured detail / message
+      if (data['detail'] != null) msg = data['detail'].toString();
+      if (data['message'] != null) msg = data['message'].toString();
+      if (data['code'] != null) code = data['code'].toString();
+
+      // Collect typical field error shapes e.g. { "email": ["..."], "password": ["..."] }
+      for (final entry in data.entries) {
+        final k = entry.key.toString();
+        final v = entry.value;
+        if (v is List) {
+          fields[k] = v.map((e) => e.toString()).toList();
+        } else if (v is String && (k == 'email' || k == 'password')) {
+          fields[k] = [v];
+        }
+      }
+
+      // If we still have the generic msg but there are field errors, build a readable one
+      if ((msg == 'Something went wrong' || msg.trim().isEmpty) &&
+          fields.isNotEmpty) {
+        msg = fields.entries
+            .map((e) => '${e.key}: ${e.value.first}')
+            .join('\n');
+      }
     }
 
-    // Fallback
+    // Network layer messages
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      msg = 'Network timeout. Please try again.';
+      code = 'network_timeout';
+    } else if (e.type == DioExceptionType.connectionError) {
+      msg = 'No internet connection.';
+      code = 'network_error';
+    }
+
     return ApiFailure(
-      message: e.message ?? 'Unexpected error',
+      message: msg,
+      code: code,
       status: status,
-      raw: e,
+      fieldErrors: fields,
     );
   }
 
-  /// Convert back to DioException so interceptors chain stays happy.
+  /// For our interceptor which rethrows as DioException
   DioException asDioError() => DioException(
-    requestOptions: raw?.requestOptions ?? RequestOptions(),
-    response: raw?.response,
+    requestOptions: RequestOptions(path: ''),
     error: this,
-    type: raw?.type ?? DioExceptionType.unknown,
-    message: message,
+    response: eResponseLike(),
+    type: DioExceptionType.badResponse,
   );
+
+  Response<dynamic>? eResponseLike() => null;
 }

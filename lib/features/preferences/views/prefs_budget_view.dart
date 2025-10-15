@@ -1,8 +1,8 @@
-// lib/features/preferences/views/prefs_budget_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../preferences_controller.dart';
 import '../widgets/prefs_widgets.dart';
+import '../../../app/app_routes.dart';
 
 const _teal = Color(0xFF0C3E3D);
 const _bg = Color(0xFFF1F4F6);
@@ -22,15 +22,28 @@ class PrefsBudgetView extends GetView<PreferencesController> {
             const HeaderArc(),
             Expanded(
               child: Obx(() {
-                final budgets = c.options.value?.budgets ?? [];
-                final sel = c.budget.value;
+                if (c.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final pref = c.budget; // dynamic preference from API
+                if (pref == null) {
+                  return const Center(
+                    child: Text('Unable to load budget preferences.'),
+                  );
+                }
+
+                final budgets = pref.options;
+                final selectedId = c.selectedBudgetId.value;
+                final customText = c.customBudgetText.value;
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Spending limit per week',
+                        pref.title,
                         style: Theme.of(context).textTheme.headlineMedium!
                             .copyWith(
                               fontWeight: FontWeight.w800,
@@ -38,21 +51,27 @@ class PrefsBudgetView extends GetView<PreferencesController> {
                             ),
                       ),
                       const SizedBox(height: 16),
+
+                      // 🟢 Custom text input for custom range
                       _customField(
-                        initial: sel,
-                        onChanged: (v) => c.budget.value = v,
+                        initial: customText,
+                        onChanged: (v) => c.customBudgetText.value = v,
                       ),
                       const SizedBox(height: 18),
+
+                      // 🟢 List of budget chips (from API)
                       Wrap(
                         spacing: 16,
                         runSpacing: 16,
                         children: budgets
                             .map(
                               (b) => _budgetChip(
-                                b,
-                                selected: sel == b,
+                                b.rangeText ?? b.label ?? '',
+                                selected: selectedId == b.id,
                                 onTap: () {
-                                  c.budget.value = b;
+                                  c.selectedBudgetId.value = b.id;
+                                  c.customBudgetText.value =
+                                      ''; // clear custom text
                                 },
                               ),
                             )
@@ -63,13 +82,20 @@ class PrefsBudgetView extends GetView<PreferencesController> {
                 );
               }),
             ),
-            PrimaryBarButton(
-              onTap: c.submit,
-              loading: c.loading.value,
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 26,
+
+            // 🟢 Continue button
+            Obx(
+              () => PrimaryBarButton(
+                onTap: () async {
+                  await c.submitBudget();
+                  Get.offAllNamed(Routes.prefsStart);
+                },
+                loading: c.loading.value,
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ],

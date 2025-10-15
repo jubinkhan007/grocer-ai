@@ -1,4 +1,3 @@
-// lib/features/preferences/views/prefs_diet_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../preferences_controller.dart';
@@ -13,6 +12,8 @@ class PrefsDietView extends GetView<PreferencesController> {
 
   @override
   Widget build(BuildContext context) {
+    final c = controller;
+
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
@@ -21,33 +22,59 @@ class PrefsDietView extends GetView<PreferencesController> {
             const HeaderArc(),
             Expanded(
               child: Obx(() {
-                final diet = controller.options.value?.diet ?? [];
+                if (c.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final pref = c.diet;
+                if (pref == null) {
+                  return const Center(
+                    child: Text('Unable to load dietary preferences.'),
+                  );
+                }
+
+                final selected = c.selectedDietIds;
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Dietary preference',
+                        pref.title,
                         style: Theme.of(context).textTheme.headlineMedium!
                             .copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF33363E),
                             ),
                       ),
+                      if (pref.helpText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          pref.helpText!,
+                          style: const TextStyle(
+                            color: Color(0xFF6B737C),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
-                      ...diet.map(
-                        (d) => _checkTile(
-                          title: d,
-                          selected: controller.dietSelected.contains(d),
+
+                      // 🟢 Render API options as checkboxes
+                      ...pref.options.map(
+                        (opt) => _checkTile(
+                          title: opt.label ?? '',
+                          selected: selected.contains(opt.id),
                           onChanged: (v) {
-                            if (v)
-                              controller.dietSelected.add(d);
-                            else
-                              controller.dietSelected.remove(d);
+                            if (v) {
+                              selected.add(opt.id);
+                            } else {
+                              selected.remove(opt.id);
+                            }
                           },
                         ),
                       ),
+
                       const SizedBox(height: 18),
                       const Text(
                         'Additional Information',
@@ -59,19 +86,27 @@ class PrefsDietView extends GetView<PreferencesController> {
                       const SizedBox(height: 10),
                       NoteField(
                         hint: 'Enter your dietary preference',
-                        onChanged: (v) => controller.dietNote.value = v,
+                        onChanged: (v) => c.dietNote.value = v,
                       ),
                     ],
                   ),
                 );
               }),
             ),
-            PrimaryBarButton(
-              onTap: () => Get.toNamed(Routes.prefsCuisine),
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 26,
+
+            // ✅ Submit + Next
+            Obx(
+              () => PrimaryBarButton(
+                onTap: () async {
+                  await c.submitDiet();
+                  Get.toNamed(Routes.prefsCuisine);
+                },
+                loading: c.loading.value,
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ],
@@ -97,33 +132,6 @@ class PrefsDietView extends GetView<PreferencesController> {
         title: Text(title, style: const TextStyle(fontSize: 18)),
         activeColor: _teal,
         controlAffinity: ListTileControlAffinity.leading,
-      ),
-    );
-  }
-
-  static Widget _noteField({
-    required String hint,
-    required ValueChanged<String> onChanged,
-  }) {
-    return TextField(
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        prefixIcon: const Padding(
-          padding: EdgeInsets.only(left: 16, right: 12),
-          child: Icon(Icons.shopping_basket_outlined, color: Color(0xFF2F6767)),
-        ),
-        prefixIconConstraints: const BoxConstraints(minWidth: 48),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 18,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(36),
-          borderSide: BorderSide.none,
-        ),
       ),
     );
   }

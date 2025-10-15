@@ -10,6 +10,17 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<!-- Required to request 'When In Use' location permission -->
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We need your location to connect you with nearby grocery stores and improve recommendations.</string>
+
+<!-- Optional: if you ever ask for Always permission -->
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>We use your location to provide accurate, location-based services.</string>
+
+<!-- Older iOS variants / some review tools still look for this -->
+<key>NSLocationAlwaysUsageDescription</key>
+<string>We use your location to provide accurate, location-based services.</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

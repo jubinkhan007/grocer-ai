@@ -1,130 +1,120 @@
 // lib/features/preferences/preferences_repository.dart
 import 'package:dio/dio.dart';
-import 'package:grocer_ai/core/theme/network/api_endpoints.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
+import 'package:grocer_ai/core/theme/network/api_endpoints.dart';
 
 class PreferencesRepository {
   final DioClient _client;
   PreferencesRepository(this._client);
 
-  Future<PrefOptions> load() async {
+  /// GET /api/v1/preferences/ (paginated)
+  Future<List<PreferenceItem>> fetchAll() async {
     try {
       final res = await _client.dio.get<Map<String, dynamic>>(
-        '/api/v1/preferences/',
+        ApiPath.preferences,
       );
-      final data = res.data ?? {};
-      return PrefOptions.fromJson(data);
+      final data = (res.data ?? const {}) as Map<String, dynamic>;
+      final list = (data['results'] as List? ?? const []);
+      return list
+          .map((e) => PreferenceItem.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
-      // e.error is Object? -> make sure we throw a NON-null ApiFailure
-      if (e.error is ApiFailure) {
-        throw e.error as ApiFailure;
-      }
-      throw ApiFailure.fromDioError(e);
+      throw (e.error is ApiFailure
+          ? e.error as ApiFailure
+          : ApiFailure.fromDioError(e));
     }
   }
 
-  Future<void> submit(PrefPayload payload) async {
+  /// POST /api/v1/user-preferences/
+  Future<void> postUserPreference(UserPrefPayload payload) async {
     try {
-      await _client.dio.post('/api/v1/preferences/', data: payload.toJson());
+      await _client.dio.post(ApiPath.userPreferences, data: payload.toJson());
     } on DioException catch (e) {
-      if (e.error is ApiFailure) {
-        throw e.error as ApiFailure;
-      }
-      throw ApiFailure.fromDioError(e);
+      throw (e.error is ApiFailure
+          ? e.error as ApiFailure
+          : ApiFailure.fromDioError(e));
     }
   }
 }
 
-/// -------- Models (be liberal with field names to survive API changes)
-class PrefOptions {
-  final List<GroceryBrand> grocers; // logos + names
-  final int grocerMax;
-  final int defaultAdults;
-  final int defaultKids;
-  final int defaultPets;
-  final List<String> diet;
-  final List<String> cuisine;
-  final List<String> frequency; // e.g. Daily/Weekly/Monthly
-  final List<String> budgets; // e.g. "$ 50 - 80"
+/// ----------------- Models (loosely typed to survive schema tweaks) -----------------
+class PreferenceItem {
+  final int id;
+  final String type; // single | multiple | number | num_rng
+  final String title; // “Nearby Grocers”...
+  final String? helpText;
+  final String listType; // “hor” | “ver”
+  final bool isMandatory;
+  final List<PrefOption> options;
 
-  PrefOptions({
-    required this.grocers,
-    required this.grocerMax,
-    required this.defaultAdults,
-    required this.defaultKids,
-    required this.defaultPets,
-    required this.diet,
-    required this.cuisine,
-    required this.frequency,
-    required this.budgets,
+  PreferenceItem({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.helpText,
+    required this.listType,
+    required this.isMandatory,
+    required this.options,
   });
 
-  factory PrefOptions.fromJson(Map<String, dynamic> json) {
-    List<GroceryBrand> _grocers = [];
-    final g = (json['grocers'] ?? json['nearby_grocers'] ?? []) as List;
-    _grocers = g
-        .map((e) => GroceryBrand.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    List<String> _stringList(dynamic v) =>
-        (v as List?)?.map((e) => e.toString()).toList() ?? const [];
-
-    return PrefOptions(
-      grocers: _grocers,
-      grocerMax: (json['grocer_max_selection'] ?? 3) as int,
-      defaultAdults: (json['defaults']?['adults'] ?? 2) as int,
-      defaultKids: (json['defaults']?['kids'] ?? 0) as int,
-      defaultPets: (json['defaults']?['pets'] ?? 0) as int,
-      diet: _stringList(json['diet'] ?? json['dietary']),
-      cuisine: _stringList(json['cuisine']),
-      frequency: _stringList(json['frequency']),
-      budgets: _stringList(json['budgets'] ?? json['budget_ranges']),
-    );
-  }
-}
-
-class GroceryBrand {
-  final String id;
-  final String name;
-  final String? logo; // absolute or asset-like
-  GroceryBrand({required this.id, required this.name, this.logo});
-  factory GroceryBrand.fromJson(Map<String, dynamic> j) => GroceryBrand(
-    id: (j['id'] ?? j['slug'] ?? j['name']).toString(),
-    name: (j['name'] ?? '').toString(),
-    logo: j['logo']?.toString(),
+  factory PreferenceItem.fromJson(Map<String, dynamic> j) => PreferenceItem(
+    id: (j['id'] ?? 0) as int,
+    type: (j['preference_type'] ?? '').toString(),
+    title: (j['title'] ?? '').toString(),
+    helpText: j['help_text']?.toString(),
+    listType: (j['option_list_type'] ?? '').toString(),
+    isMandatory: (j['is_mandatory'] ?? false) as bool,
+    options: ((j['options'] ?? []) as List)
+        .map((e) => PrefOption.fromJson(e as Map<String, dynamic>))
+        .toList(),
   );
 }
 
-class PrefPayload {
-  // Submit format, adapt to server expectations if needed
-  final List<String> grocers;
-  final int adults, kids, pets;
-  final List<String> diet, cuisine;
-  final String frequency;
-  final String budget; // chip OR custom text
-  final String? dietNote;
-  final String? cuisineNote;
+class PrefOption {
+  final int id;
+  final String? label;
+  final String? icon;
+  final int? numberValue; // for number screens
+  final String? rangeText; // for num_rng screens
 
-  PrefPayload({
-    required this.grocers,
-    required this.adults,
-    required this.kids,
-    required this.pets,
-    required this.diet,
-    required this.cuisine,
-    required this.frequency,
-    required this.budget,
-    this.dietNote,
-    this.cuisineNote,
+  PrefOption({
+    required this.id,
+    this.label,
+    this.icon,
+    this.numberValue,
+    this.rangeText,
+  });
+
+  factory PrefOption.fromJson(Map<String, dynamic> j) => PrefOption(
+    id: (j['id'] ?? 0) as int,
+    label: j['label']?.toString(),
+    icon: j['icon']?.toString(),
+    numberValue: j['number_value'] is int ? j['number_value'] as int : null,
+    rangeText: j['range_text']?.toString(),
+  );
+}
+
+class UserPrefPayload {
+  final int preference; // preference id
+  final int? selectedOption; // for single choice
+  final List<int>? selectedOptions; // for multiple choice
+  final String? additionInfo; // notes
+  final String? numberValue; // numeric value as string when applicable
+
+  UserPrefPayload({
+    required this.preference,
+    this.selectedOption,
+    this.selectedOptions,
+    this.additionInfo,
+    this.numberValue,
   });
 
   Map<String, dynamic> toJson() => {
-    'grocers': grocers,
-    'household': {'adults': adults, 'kids': kids, 'pets': pets},
-    'diet': {'selected': diet, 'note': dietNote},
-    'cuisine': {'selected': cuisine, 'note': cuisineNote},
-    'frequency': frequency,
-    'budget': budget,
+    'preference': preference,
+    if (selectedOption != null) 'selected_option': selectedOption,
+    if (selectedOptions != null) 'selected_options': selectedOptions,
+    if (additionInfo != null) 'addition_info': additionInfo,
+    if (numberValue != null) 'number_value': numberValue,
   };
 }

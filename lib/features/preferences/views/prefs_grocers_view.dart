@@ -1,4 +1,3 @@
-// lib/features/preferences/views/prefs_grocers_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../preferences_controller.dart';
@@ -25,58 +24,66 @@ class PrefsGrocersView extends GetView<PreferencesController> {
                 if (controller.loading.value) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (controller.error.value != null) {
-                  return _Error(
-                    onRetry: () => Get.offAllNamed(Routes.prefsStart),
-                    msg: controller.error.value!,
+
+                final pref = controller.grocers;
+                if (pref == null) {
+                  return const Center(
+                    child: Text('Unable to load preferences.'),
                   );
                 }
-                final opt = controller.options.value!;
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Column(
                     children: [
                       const SizedBox(height: 4),
                       Text(
-                        'Nearby Grocers',
+                        pref.title,
                         style: Theme.of(context).textTheme.headlineMedium!
                             .copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF33363E),
                             ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        '(Select upto 3)',
-                        style: TextStyle(
-                          color: Color(0xFF6B737C),
-                          fontSize: 18,
+                      if (pref.helpText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          pref.helpText!,
+                          style: const TextStyle(
+                            color: Color(0xFF6B737C),
+                            fontSize: 18,
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 20),
                       Wrap(
                         spacing: 16,
                         runSpacing: 16,
-                        children: opt.grocers
+                        children: pref.options
                             .map(
                               (g) => _GrocerPill(
-                                label: g.name,
-                                selected: controller.selectedGrocers.contains(
+                                label: g.label ?? '',
+                                selected: controller.selectedGrocerIds.contains(
                                   g.id,
                                 ),
                                 onTap: () {
-                                  final ok = controller.toggleGrocer(g.id);
-                                  if (!ok) {
+                                  final ids = controller.selectedGrocerIds
+                                      .toList();
+                                  if (ids.contains(g.id)) {
+                                    controller.selectedGrocerIds.remove(g.id);
+                                  } else if (ids.length < 3) {
+                                    controller.selectedGrocerIds.add(g.id);
+                                  } else {
                                     Get.snackbar(
                                       'Limit reached',
-                                      'You can only select ${opt.grocerMax}.',
+                                      'You can only select 3.',
                                     );
                                   }
                                 },
-                                leading: g.logo == null
+                                leading: g.icon == null
                                     ? null
                                     : Image.network(
-                                        g.logo!,
+                                        g.icon!,
                                         width: 28,
                                         height: 28,
                                         errorBuilder: (_, __, ___) =>
@@ -92,7 +99,10 @@ class PrefsGrocersView extends GetView<PreferencesController> {
               }),
             ),
             PrimaryBarButton(
-              onTap: () => Get.toNamed(Routes.prefsHouse),
+              onTap: () async {
+                await controller.submitGrocers();
+                Get.toNamed(Routes.prefsHouse);
+              },
               child: const Icon(
                 Icons.arrow_forward,
                 color: Colors.white,
@@ -151,21 +161,4 @@ class _GrocerPill extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Error extends StatelessWidget {
-  final String msg;
-  final VoidCallback onRetry;
-  const _Error({required this.msg, required this.onRetry});
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(msg, textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
-      ],
-    ),
-  );
 }

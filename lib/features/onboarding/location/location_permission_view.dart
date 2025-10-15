@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/onboarding/location/location_controller.dart';
 
 /// ---- Brand colors used across the mockups ----
 const _bg = Color(0xFFF1F4F6);
@@ -13,6 +14,7 @@ class LocationPermissionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<LocationController>();
     final w = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -83,22 +85,29 @@ class LocationPermissionView extends StatelessWidget {
             // Action button (disabled look under dialogs on your mocks)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 64,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _teal,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(44),
+              child: Obx(
+                () => SizedBox(
+                  width: double.infinity,
+                  height: 64,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _teal,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(44),
+                      ),
                     ),
-                  ),
-                  onPressed: () {
-                    _showAccuracyCollapsed(context);
-                  },
-                  child: const Text(
-                    'Allow access to location',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    onPressed: c.loading.value
+                        ? null
+                        : () => _showAccuracyCollapsed(context),
+                    child: c.loading.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Allow access to location',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -142,7 +151,8 @@ void _showAccuracyCollapsed(BuildContext context) {
                   IconButton(
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      _showAccuracyExpanded(context);
+                      final c = Get.find<LocationController>();
+                      c.requestAndSaveLocation();
                     },
                     icon: const Icon(Icons.expand_more, color: _teal),
                   ),
@@ -170,7 +180,8 @@ void _showAccuracyCollapsed(BuildContext context) {
                   TextButton(
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      _showTurnOnLocation(context);
+                      final c = Get.find<LocationController>();
+                      c.requestAndSaveLocation();
                     },
                     child: const Text(
                       'Turn on',
@@ -222,7 +233,8 @@ void _showAccuracyExpanded(BuildContext context) {
                   IconButton(
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      _showAccuracyCollapsed(context);
+                      final c = Get.find<LocationController>();
+                      c.requestAndSaveLocation();
                     },
                     icon: const Icon(Icons.expand_less, color: _teal),
                   ),
@@ -264,7 +276,8 @@ void _showAccuracyExpanded(BuildContext context) {
                   TextButton(
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      _showTurnOnLocation(context);
+                      final c = Get.find<LocationController>();
+                      c.requestAndSaveLocation();
                     },
                     child: const Text(
                       'Turn on',
@@ -352,7 +365,8 @@ void _showTurnOnLocation(BuildContext context) {
                 child: TextButton(
                   onPressed: () {
                     Navigator.of(ctx).pop();
-                    // After user turns on location, you could proceed to request permission.
+                    final c = Get.find<LocationController>();
+                    c.requestAndSaveLocation();
                   },
                   child: const Text(
                     'Try again',

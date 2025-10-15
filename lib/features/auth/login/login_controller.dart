@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:grocer_ai/app/app_routes.dart';
+import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
 import 'package:grocer_ai/features/auth/data/auth_repository.dart';
 
@@ -54,19 +55,27 @@ class LoginController extends GetxController {
 
     try {
       loading.value = true;
-      await _repo.login(email: email, password: pass);
+      final tokens = await _repo.login(email: email, password: pass);
+
+      // Persist tokens again just to be safe
+      await _box.write('auth_token', tokens.accessToken);
+      await _box.write('refresh_token', tokens.refreshToken);
+
+      // Inject token into Dio for live session use
+      final dio = Get.find<DioClient>();
+      dio.dio.options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+
       loading.value = false;
 
-      // navigate to your main shell
-      Get.offAllNamed(Routes.main);
+      // ✅ Navigate to your main Home screen
+      Get.offAllNamed(Routes.home);
     } on ApiFailure catch (e) {
       loading.value = false;
 
-      // map known server codes to field bubbles
       switch (e.code) {
         case 'email_not_found':
         case 'invalid_email':
-          emailError.value = e.message; // "Email is wrong"
+          emailError.value = e.message;
           return;
         case 'invalid_password':
         case 'password_wrong':
@@ -77,7 +86,6 @@ class LoginController extends GetxController {
           return;
       }
 
-      // Heuristic if code missing:
       final msg = e.message.toLowerCase();
       if (msg.contains('email')) {
         emailError.value = e.message;
@@ -88,7 +96,7 @@ class LoginController extends GetxController {
       }
     } catch (e) {
       loading.value = false;
-      Get.snackbar('Login failed', 'Unexpected error');
+      Get.snackbar('Login failed', 'Unexpected error: $e');
     }
   }
 

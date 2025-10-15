@@ -1,6 +1,10 @@
 // lib/app/app_routes.dart
 
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/home/home_binding.dart';
+import 'package:grocer_ai/features/home/home_view.dart';
+import 'package:grocer_ai/features/onboarding/location/location_binding.dart';
+import 'package:grocer_ai/features/onboarding/location/location_permission_view.dart';
 import 'package:grocer_ai/features/preferences/preferences_binding.dart';
 import 'package:grocer_ai/features/preferences/views/prefs_budget_view.dart';
 import 'package:grocer_ai/features/preferences/views/prefs_cuisine_view.dart';
@@ -29,6 +33,7 @@ abstract class Routes {
   static const cart = '/cart';
   static const compare = '/compare';
   static const checkout = '/checkout';
+  static const locationPermission = '/locationPermission';
   static const orders = '/orders';
   static const profile = '/profile';
   static const main = '/main';
@@ -84,15 +89,45 @@ class AppPages {
     ),
 
     GetPage(
-      name: Routes.prefsStart,
+      name: Routes.locationPermission,
+      page: () => const LocationPermissionView(),
+      binding: LocationPermissionBinding(),
+    ),
+
+    GetPage(
+      name: Routes.prefsGrocers,
       page: () => const PrefsGrocersView(),
       binding: PreferencesBinding(),
     ),
-    GetPage(name: Routes.prefsGrocers, page: () => const PrefsGrocersView()),
-    GetPage(name: Routes.prefsHouse, page: () => const PrefsHouseholdView()),
-    GetPage(name: Routes.prefsDiet, page: () => const PrefsDietView()),
-    GetPage(name: Routes.prefsCuisine, page: () => const PrefsCuisineView()),
-    GetPage(name: Routes.prefsFreq, page: () => const PrefsFrequencyView()),
-    GetPage(name: Routes.prefsBudget, page: () => const PrefsBudgetView()),
+    GetPage(
+      name: Routes.prefsHouse,
+      page: () => const PrefsHouseholdView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(
+      name: Routes.prefsDiet,
+      page: () => const PrefsDietView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(
+      name: Routes.prefsCuisine,
+      page: () => const PrefsCuisineView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(
+      name: Routes.prefsFreq,
+      page: () => const PrefsFrequencyView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(
+      name: Routes.prefsBudget,
+      page: () => const PrefsBudgetView(),
+      binding: PreferencesBinding(),
+    ),
+    GetPage(
+      name: Routes.home,
+      page: () => const HomeView(),
+      binding: HomeBinding(),
+    ),
   ];
 }

@@ -1,7 +1,5 @@
-// lib/features/preferences/views/prefs_cuisine_view.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:grocer_ai/features/preferences/views/prefs_diet_view.dart';
 import '../preferences_controller.dart';
 import '../widgets/prefs_widgets.dart';
 import '../../../app/app_routes.dart';
@@ -15,41 +13,70 @@ class PrefsCuisineView extends GetView<PreferencesController> {
   @override
   Widget build(BuildContext context) {
     final c = controller;
+
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           children: [
             const HeaderArc(),
+
+            // -------------------- Main Content --------------------
             Expanded(
               child: Obx(() {
-                final list = c.options.value?.cuisine ?? [];
+                if (c.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final pref = c.cuisine;
+                if (pref == null) {
+                  return const Center(
+                    child: Text('Unable to load cuisine preferences.'),
+                  );
+                }
+
+                final selected = c.selectedCuisineIds;
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Cuisine preference',
+                        pref.title,
                         style: Theme.of(context).textTheme.headlineMedium!
                             .copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF33363E),
                             ),
                       ),
+                      if (pref.helpText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          pref.helpText!,
+                          style: const TextStyle(
+                            color: Color(0xFF6B737C),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
-                      ...list.map(
-                        (d) => _checkTile(
-                          title: d,
-                          selected: c.cuisineSelected.contains(d),
+
+                      // 🟢 Render API options as checkboxes
+                      ...pref.options.map(
+                        (opt) => _checkTile(
+                          title: opt.label ?? '',
+                          selected: selected.contains(opt.id),
                           onChanged: (v) {
-                            if (v)
-                              c.cuisineSelected.add(d);
-                            else
-                              c.cuisineSelected.remove(d);
+                            if (v) {
+                              selected.add(opt.id);
+                            } else {
+                              selected.remove(opt.id);
+                            }
                           },
                         ),
                       ),
+
                       const SizedBox(height: 18),
                       const Text(
                         'Additional Information',
@@ -68,12 +95,20 @@ class PrefsCuisineView extends GetView<PreferencesController> {
                 );
               }),
             ),
-            PrimaryBarButton(
-              onTap: () => Get.toNamed(Routes.prefsFreq),
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 26,
+
+            // -------------------- Bottom Next Button --------------------
+            Obx(
+              () => PrimaryBarButton(
+                onTap: () async {
+                  await c.submitCuisine();
+                  Get.toNamed(Routes.prefsFreq);
+                },
+                loading: c.loading.value,
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ],
