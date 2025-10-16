@@ -4,11 +4,14 @@ import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/ff_app_bar.dart';
 import '../../../ui/widgets/section_card.dart';
 import '../../../ui/widgets/setting_row.dart';
+import '../../preferences/preferences_binding.dart';
 import '../../preferences/views/preferences_screen.dart';
 import '../reviews/reviews_screen.dart';
-import '../security/security_screen.dart';
 import '../invite/invite_screen.dart';
+import '../security/views/security_screen.dart';
 import '../views/about_us_screen.dart';
+import '../views/dashboard_preference_sheet.dart';
+import '../views/logout_dialog.dart';
 import '../views/personal_info_sheet.dart';
 import '../views/terms_conditions_screen.dart';
 
@@ -79,7 +82,25 @@ class SettingsScreen extends StatelessWidget {
                   const Divider(height: 1),
                   SettingRow(title: 'Invite friends', onTap: () => Get.to(() => const InviteScreen())),
                   const Divider(height: 1),
-                  SettingRow(title: 'Preferences', onTap: () => Get.to(() => const PreferencesScreen())),
+                  SettingRow(
+                    title: 'Preferences',
+                    onTap: () {
+                      Get.to(() => const PreferencesScreen(), binding: PreferencesBinding());
+                    },
+                  ),
+
+                  const Divider(height: 1),
+                  SettingRow(
+                    title: 'Dashboard Preferences',
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const DashboardPreferenceSheet(),
+                      );
+                    },
+                  ),
                   const Divider(height: 1),
                   SettingRow(title: 'Security', onTap: () => Get.to(() => const SecurityScreen())),
                   const Divider(height: 1),
@@ -94,6 +115,11 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   SettingRow(title: 'Help & Support', onTap: () => Get.toNamed('/support')),
+                  const Divider(height: 1),
+                  SettingRow(
+                    title: 'Logout',
+                    onTap: () => showLogoutDialog(context),
+                  ),
 
                 ],
               ),

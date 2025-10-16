@@ -30,4 +30,7 @@ class ApiPath {
   static const profilePersonalInfo = '/api/v1/profile/personal-info/';
   static const profilePartners = '/api/v1/profile/partners/';
   static const profileReferrals = '/api/v1/profile/referrals/';
+  static const notifications = '/api/v1/notifications/';
+  static const dashboardPreferences = '/api/v1/profile/dashboard-preferences/';
+  static const passwordChange = '/api/v1/auth/password-change/';
 }
