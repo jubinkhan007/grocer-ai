@@ -27,4 +27,7 @@ class ApiPath {
   static const String preferences = '/api/v1/preferences/'; // GET (paginated)
   static const String userPreferences =
       '/api/v1/user-preferences/'; // POST per screen
+  static const profilePersonalInfo = '/api/v1/profile/personal-info/';
+  static const profilePartners = '/api/v1/profile/partners/';
+  static const profileReferrals = '/api/v1/profile/referrals/';
 }

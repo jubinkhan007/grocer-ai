@@ -21,18 +21,14 @@ class DioClient {
       responseType: ResponseType.json,
       headers: {
         'accept': 'application/json',
-        // If your backend requires CSRF on login, set it here:
-        // 'X-CSRFToken': '<token>',
       },
     );
 
     final dio = Dio(options);
 
-    // ---- Interceptors ----
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // attach bearer if present
           final token = GetStorage().read('auth_token');
           if (token != null && token.toString().isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -40,23 +36,15 @@ class DioClient {
           handler.next(options);
         },
         onError: (e, handler) {
-          // Centralized mapping (network → ApiFailure)
           final mapped = ApiFailure.fromDioError(e);
           handler.reject(mapped.asDioError());
         },
       ),
     );
 
-    // Pretty logging (debug only)
     assert(() {
-      // ignore: avoid_print
       dio.interceptors.add(
-        LogInterceptor(
-          request: true,
-          requestBody: true,
-          responseBody: true,
-          error: true,
-        ),
+        LogInterceptor(request: true, requestBody: true, responseBody: true),
       );
       return true;
     }());
@@ -64,8 +52,26 @@ class DioClient {
     return DioClient._internal(dio);
   }
 
-  // convenience HTTP helpers (typed)
+  // ---------- Existing method ----------
   Future<Response<T>> postJson<T>(String path, Map<String, dynamic> body) {
     return dio.post<T>(path, data: body);
   }
+
+  // ---------- NEW helpers ----------
+  Future<Response<T>> getJson<T>(String path, {Map<String, dynamic>? query}) {
+    return dio.get<T>(path, queryParameters: query);
+  }
+
+  Future<Response<T>> putJson<T>(String path, Map<String, dynamic> body) {
+    return dio.put<T>(path, data: body);
+  }
+
+  Future<Response<T>> patchJson<T>(String path, Map<String, dynamic> body) {
+    return dio.patch<T>(path, data: body);
+  }
+
+  Future<Response<T>> deleteJson<T>(String path, {Map<String, dynamic>? query}) {
+    return dio.delete<T>(path, queryParameters: query);
+  }
 }
+

@@ -41,6 +41,7 @@ dependencies:
   pretty_dio_logger: ^1.4.0
   geolocator: ^14.0.2
   geocoding: ^4.0.0
+  share_plus: ^11.1.0
 
 dev_dependencies:
   flutter_test:
