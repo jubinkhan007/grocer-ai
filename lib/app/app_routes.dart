@@ -2,7 +2,7 @@
 
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/home/home_binding.dart';
-import 'package:grocer_ai/features/home/home_view.dart';
+import 'package:grocer_ai/features/home/dashboard_screen.dart';
 import 'package:grocer_ai/features/onboarding/location/location_binding.dart';
 import 'package:grocer_ai/features/onboarding/location/location_permission_view.dart';
 import 'package:grocer_ai/features/preferences/preferences_binding.dart';
@@ -126,7 +126,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.home,
-      page: () => const HomeView(),
+      page: () => const DashboardScreen(),
       binding: HomeBinding(),
     ),
   ];
