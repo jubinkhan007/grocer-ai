@@ -90,7 +90,7 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
                           ),
                           alignment: Alignment.center,
                           child: Image.asset(
-                            'assets/brands/walmart.png',
+                            'assets/images/walmart.png',
                             width: 30, height: 30,
                             errorBuilder: (_, __, ___) =>
                             const Icon(Icons.storefront_rounded, color: AppColors.teal),
