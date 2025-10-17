@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:grocer_ai/features/orders/views/store_add_item_screen.dart';
 
 import '../../../ui/theme/app_theme.dart';
+import 'compare_grocers_screen.dart';
 
 class StoreOrderScreen extends StatefulWidget {
   const StoreOrderScreen({
@@ -149,7 +150,9 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                 ),
                 child: TextButton(
                   onPressed: () {
-                    // TODO: compare flow
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CompareGrocersScreen()),
+                    );
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
