@@ -35,4 +35,7 @@ class ApiPath {
   static const passwordChange = '/api/v1/auth/password-change/';
 
   static const products = '/api/v1/products/';
+  // --- NEW ORDER PREFERENCES ---
+  static const String orderPreferenceList = '/api/v1/order-preference-list/';
+  static const String orderPreferences = '/api/v1/order-preferences/';
 }

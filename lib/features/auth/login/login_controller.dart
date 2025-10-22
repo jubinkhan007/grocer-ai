@@ -67,8 +67,8 @@ class LoginController extends GetxController {
 
       loading.value = false;
 
-      // ✅ Navigate to your main Home screen
-      Get.offAllNamed(Routes.home);
+      // ✅ Navigate to your shell Home screen
+      Get.offAllNamed(Routes.main);
     } on ApiFailure catch (e) {
       loading.value = false;
 

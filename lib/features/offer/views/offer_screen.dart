@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
 
@@ -28,12 +29,11 @@ class _OfferScreenState extends State<OfferScreen> {
   }
 
   void _onNavTap(int i) {
-    if (i == _tab) return;
-    setState(() => _tab = i);
-    // TODO: switch routes here for other tabs
-    // if (i == 0) Get.offAllNamed('/dashboard');
-    // if (i == 1) Get.offAll(() => const OfferScreen());
+    // ask the shell to switch tab
+    Get.find<MainShellController>().goTo(i);
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -41,16 +41,25 @@ class _OfferScreenState extends State<OfferScreen> {
       backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.teal,
-            elevation: 0,
-            pinned: true,
-            expandedHeight: 122,
-            collapsedHeight: 72,
-            flexibleSpace: const _OfferHeader(),
-          ),
+        SliverAppBar(
+        backgroundColor: AppColors.teal,
+        pinned: true,
+        expandedHeight: 122,
+        collapsedHeight: 88,
+        centerTitle: false,
+        flexibleSpace: FlexibleSpaceBar(
+          collapseMode: CollapseMode.pin,
+          // bottom padding for the collapsed title
+          titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          // ONE title that morphs between expanded/compact
+          title: const _CollapsingHeaderTitle(),
+          // no text here, only color (or image) so we don't double-draw
+          background: const ColoredBox(color: AppColors.teal),
+        ),
+      ),
 
-          // Walmart
+
+      // Walmart
           SliverToBoxAdapter(
             child: _StoreSection(
               logo: 'assets/images/walmart.png', // optional asset
@@ -93,7 +102,7 @@ class _OfferScreenState extends State<OfferScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
-      bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
+      // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
     );
   }
 }
@@ -333,6 +342,80 @@ class _DividerGutter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       child: Divider(color: AppColors.divider.withOpacity(.7), height: 1),
+    );
+  }
+}
+class _CollapsingHeaderTitle extends StatelessWidget {
+  const _CollapsingHeaderTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final settings =
+    context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+
+    // Fallback if not inside a FlexibleSpaceBar
+    double t = 0.0;
+    if (settings != null && settings.maxExtent > settings.minExtent) {
+      t = ((settings.currentExtent - settings.minExtent) /
+          (settings.maxExtent - settings.minExtent))
+          .clamp(0.0, 1.0);
+    }
+
+    final bool expanded = t > 0.6; // threshold where we switch layouts
+    return _HeaderRow(compact: !expanded);
+  }
+}
+
+
+class _HeaderRow extends StatelessWidget {
+  const _HeaderRow({required this.compact});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi, Joshep',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 20 : 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on_outlined,
+                      color: Colors.white70, size: 18),
+                  SizedBox(width: 6),
+                  Text('Savar, Dhaka',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Stack(
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.notifications_none_rounded,
+                  color: Colors.white, size: 26),
+            ),
+            const Positioned(
+              right: 10, top: 10,
+              child: CircleAvatar(radius: 4, backgroundColor: Colors.red),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

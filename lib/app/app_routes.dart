@@ -24,6 +24,13 @@ import 'package:grocer_ai/features/auth/login/login_view.dart';
 import 'package:grocer_ai/features/auth/signup_bidning.dart';
 import 'package:grocer_ai/features/auth/signup_view.dart';
 
+import '../features/help/views/help_support_screen.dart';
+import '../features/offer/views/offer_screen.dart';
+import '../features/orders/views/orders_screen.dart';
+import '../features/profile/settings/settings_screen.dart';
+import '../shell/main_shell.dart';
+import '../shell/main_shell_controller.dart';
+
 abstract class Routes {
   static const splash = '/';
   static const onboarding = '/onboarding';
@@ -36,7 +43,7 @@ abstract class Routes {
   static const locationPermission = '/locationPermission';
   static const orders = '/orders';
   static const profile = '/profile';
-  static const main = '/main';
+  static const main = '/shell';
   static const forgot = '/forgot';
   static const otp = '/forgot/otp';
   static const reset = '/forgot/reset';
@@ -47,6 +54,9 @@ abstract class Routes {
   static const prefsCuisine = '/prefs/cuisine';
   static const prefsFreq = '/prefs/frequency';
   static const prefsBudget = '/prefs/budget';
+  static const offer = '/offer';
+  static const order = '/order';
+  static const help = '/help';
 }
 
 class AppPages {
@@ -126,8 +136,15 @@ class AppPages {
     ),
     GetPage(
       name: Routes.home,
-      page: () => const DashboardScreen(),
+      page: () => DashboardScreen(),
       binding: HomeBinding(),
     ),
+    GetPage(name: Routes.main, page: () => MainShell(), binding: BindingsBuilder(() {
+      Get.put(MainShellController());
+    })),
+    GetPage(name: Routes.offer, page: () => const OfferScreen()),
+    GetPage(name: Routes.order,     page: () => const OrderScreen()),
+    GetPage(name: Routes.help,     page: () => const HelpSupportScreen()),
+    GetPage(name: Routes.profile,  page: () => const SettingsScreen()),
   ];
 }

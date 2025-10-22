@@ -1,3 +1,5 @@
+// lib/app/app_bindings.dart
+
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
