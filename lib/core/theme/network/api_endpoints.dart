@@ -33,4 +33,6 @@ class ApiPath {
   static const notifications = '/api/v1/notifications/';
   static const dashboardPreferences = '/api/v1/profile/dashboard-preferences/';
   static const passwordChange = '/api/v1/auth/password-change/';
+
+  static const products = '/api/v1/products/';
 }

@@ -81,5 +81,7 @@ class AppBindings extends Bindings {
     );
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
 
+
+
   }
 }
