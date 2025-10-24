@@ -1,35 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../ui/theme/app_theme.dart';
-import '../../../widgets/ff_bottom_nav.dart';
+import '../../../ui/theme/app_theme.dart'; // if you still need AppColors
 
-class HelpSupportScreen extends StatefulWidget {
+class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  @override
-  State<HelpSupportScreen> createState() => _HelpSupportScreenState();
-}
-
-class _HelpSupportScreenState extends State<HelpSupportScreen> {
-  // Help tab index in your bottom nav: Home=0, Offer=1, Order=2, Help=3, Profile=4
-  int _tab = 3;
-
-  Future<void> _openLiveChat() async {
+  void _openLiveChat() {
     Get.snackbar('Live chat', 'Hook me up to your live chat when ready.');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F6), // Figma page bg
+      backgroundColor: const Color(0xFFF4F6F6),
+
       body: CustomScrollView(
         slivers: [
-          /// ===== Top app bar (Figma: header block under status 69px) =====
+          // ===== Top app bar =====
           SliverAppBar(
             pinned: true,
             elevation: 0,
             backgroundColor: const Color(0xFF33595B),
-            // 48 (status area) + 69 (header) ~= 117 visual height in Figma
             collapsedHeight: 117,
             expandedHeight: 117,
             titleSpacing: 0,
@@ -39,11 +30,22 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               child: SafeArea(
                 bottom: false,
                 child: Row(
-                  children: const [
-                    // iOS-style arrow used in the comps
-                    Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
+                  children: [
+                    // back button should actually pop this route
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: Get.back,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
                       'Help & Support',
                       // Figma: 20 / 700 / white
                       style: TextStyle(
@@ -58,15 +60,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ),
           ),
 
-          /// ===== Body =====
+          // ===== Body =====
           SliverToBoxAdapter(
             child: Padding(
-              // Figma page padding: 24 left/right, top space below header
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  // Intro copy (Figma: 14 / 400 / #212121 / lh 1.43)
                   Text(
                     'We’re here to assist you! Find quick answers to your questions or contact us directly for help.',
                     style: TextStyle(
@@ -88,7 +88,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       _CardRow.divider(),
                       _CardRow(
                         leading: 'Phone Support',
-                        value: 'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
+                        value:
+                            'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
                       ),
                       _CardRow.divider(),
                       _CardRow(
@@ -126,7 +127,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       _CardRow(
                         leading: 'Password Reset',
                         value:
-                        'Tap “Forgot Password?” on the login page to reset.',
+                            'Tap “Forgot Password?” on the login page to reset.',
                       ),
                     ],
                   ),
@@ -137,16 +138,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         ],
       ),
 
-      /// ===== Floating chat button (64x64, shadow, exact color) =====
+      // FAB (chat)
       floatingActionButton: Padding(
-        // nudged a bit inward to match figma placement
         padding: const EdgeInsets.only(bottom: 10, right: 6),
         child: Container(
           width: 64,
           height: 64,
-          decoration: BoxDecoration(
-            // figma shadow: 0,4,16, #15224F @ 10% (0x1915224F)
-            boxShadow: const [
+          decoration: const BoxDecoration(
+            boxShadow: [
               BoxShadow(
                 color: Color(0x1915224F),
                 blurRadius: 16,
@@ -160,20 +159,21 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             elevation: 0,
             backgroundColor: const Color(0xFF33595B),
             shape: const CircleBorder(),
-            child: const Icon(Icons.support_agent, size: 30, color: Colors.white),
+            child: const Icon(
+              Icons.support_agent,
+              size: 30,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
 
-      /// ===== Bottom nav (on in comps) =====
-      // If your app uses FFBottomNav, keep this enabled to match the mock.
-      bottomNavigationBar:
-      FFBottomNav(currentIndex: _tab, onTap: (i) => setState(() => _tab = i)),
+      // ⛔️ IMPORTANT: no bottomNavigationBar here.
     );
   }
 }
 
-/// =============== Small building blocks (exact to Figma) ===============
+/// ===== helper widgets =====
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.rows});
@@ -182,6 +182,25 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // we render rows manually to preserve figma spacing/dividers
+    final contentRows = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      final row = rows[i];
+      if (row.isDivider) {
+        contentRows.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(height: 1, color: const Color(0xFFE0E0E0)),
+          ),
+        );
+      } else {
+        if (i != 0 && !rows[i - 1].isDivider) {
+          contentRows.add(const SizedBox(height: 16));
+        }
+        contentRows.add(row);
+      }
+    }
+
     return Container(
       // Card: white, radius 8, padding 16, divider color E0E0E0
       decoration: BoxDecoration(
@@ -192,7 +211,6 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title: 16 / 600 / #212121
           Text(
             title,
             style: const TextStyle(
@@ -204,53 +222,29 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Container(height: 1, color: const Color(0xFFE0E0E0)),
           const SizedBox(height: 16),
-          // Rows with 16 vertical spacing (“spacing: 16” in plugin)
-          ..._intersperse(rows.where((r) => !r.isDivider).toList(), const SizedBox(height: 16)),
-          // we draw internal dividers via individual _CardRow.divider() widgets:
-          ...rows.where((r) => r.isDivider),
+          ...contentRows,
         ],
       ),
     );
   }
-
-  // helper to add spacing between non-divider rows
-  static List<Widget> _intersperse(List<_CardRow> items, Widget spacer) {
-    final out = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      out.add(items[i]);
-      if (i != items.length - 1) out.add(spacer);
-    }
-    return out;
-  }
 }
 
 class _CardRow extends StatelessWidget {
-  const _CardRow({
-    this.leading,
-    this.value,
-    this.isDivider = false,
-  });
+  const _CardRow({this.leading, this.value, this.isDivider = false});
 
   final String? leading;
   final String? value;
   final bool isDivider;
 
-  /// A divider row inside the card with exact color/height from Figma
-  const _CardRow.divider()
-      : leading = null,
-        value = null,
-        isDivider = true;
+  const _CardRow.divider() : leading = null, value = null, isDivider = true;
 
   @override
   Widget build(BuildContext context) {
     if (isDivider) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Container(height: 1, color: const Color(0xFFE0E0E0)),
-      );
+      // handled in _SectionCard above
+      return const SizedBox.shrink();
     }
 
-    // Text system: 14 size, label 500, value 400, #212121, lh 1.43
     return RichText(
       text: TextSpan(
         children: [
@@ -260,6 +254,7 @@ class _CardRow extends StatelessWidget {
               color: Color(0xFF212121),
               fontSize: 14,
               fontWeight: FontWeight.w500,
+              height: 1.43,
             ),
           ),
           TextSpan(

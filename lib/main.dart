@@ -23,7 +23,7 @@ class GrocerAiApp extends StatelessWidget {
       title: 'GrocerAI',
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
-      darkTheme: darkTheme,
+      //      darkTheme: darkTheme,
       initialRoute: Routes.splash,
       getPages: AppPages.pages, // <-- single source of truth
     );

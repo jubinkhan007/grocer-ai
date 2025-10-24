@@ -421,7 +421,6 @@ class _SocialBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFEAEFF2)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x14000000),
@@ -431,7 +430,17 @@ class _SocialBtn extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Image.asset(asset, width: 26, height: 26, fit: BoxFit.contain),
+          child: ClipOval(
+            child: Transform.scale(
+              scale: 1.2, // zoom in to hide the baked border
+              child: Image.asset(
+                asset,
+                width: 26,
+                height: 26,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ),
       ),
     );
