@@ -10,7 +10,6 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  // 🔌 API stub – replace with live location/ETA later
   Future<void> _loadTracking() async {
     await Future<void>.delayed(const Duration(milliseconds: 1));
   }
@@ -23,224 +22,360 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.of(context).padding.top; // iOS status-bar / notch
+    // Figma: status bar 48 + header 69 ≈ 117 (visual)
+    const double headerBodyHeight = 69;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade200, // hidden by map background
+      backgroundColor: const Color(0xFFF4F6F6),
       body: Stack(
         children: [
-          // Map background (use an asset mock, or gray if missing)
+          // --- MAP (mock) ----------------------------------------------------
           Positioned.fill(
             child: Image.asset(
-              'assets/images/maps.png', // optional
+              'assets/images/maps.png',
               fit: BoxFit.cover,
-              colorBlendMode: BlendMode.srcOver,
-              color: Colors.black.withOpacity(0.02),
               errorBuilder: (_, __, ___) => Container(color: const Color(0xFFEDEFF2)),
             ),
           ),
 
-          // Top bar
+          // simple route painter to match the angles/weight from Figma
+          Positioned.fill(child: CustomPaint(painter: _FigmaRoutePainter())),
+
+          // dim overlay under the header (Figma adds a soft scrim)
           Positioned(
-            left: 0, right: 0, top: 0,
+            left: 0,
+            right: 0,
+            top: topInset + headerBodyHeight +  -6, // tiny nudge so it starts just under header
             child: Container(
-              color: AppColors.teal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              height: 72,
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: const [
-                    BackButton(color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('Order tracking',
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-                  ],
-                ),
+              height: 536, // from the plugin block
+              color: Colors.black.withOpacity(0.08),
+            ),
+          ),
+
+          // --- HEADER (pixel values from Figma plugin) -----------------------
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: Container(
+              color: const Color(0xFF33595B),
+              padding: EdgeInsets.only(left: 24, right: 24, top: topInset, bottom: 20),
+              height: topInset + headerBodyHeight,
+              child: Row(
+                children: [
+                  // back chevron same feel as Figma (14x20 approx)
+                  IconButton(
+                    onPressed: Get.back,
+                    padding: EdgeInsets.zero,
+                    iconSize: 22,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    color: Colors.white,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Order tracking',
+                    style: TextStyle(
+                      color: Color(0xFFFEFEFE),
+                      fontSize: 20,           // Figma: 20, w700
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // Simple mock route (polyline + pins)
-          Positioned.fill(
-            child: CustomPaint(painter: _RoutePainter()),
-          ),
-
-          // Bottom sheet area (fixed, like your mock)
-          _TrackingBottomCard(),
+          // --- BOTTOM SHEET (exact paddings/radius/typography) ---------------
+          _TrackingBottomSheet(),
         ],
       ),
     );
   }
 }
 
-class _RoutePainter extends CustomPainter {
+// ===== Map route / pins (visual approximation of Figma) ======================
+class _FigmaRoutePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // rough path similar to mock
+    // Path
     final p = Paint()
-      ..color = AppColors.teal
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
+      ..color = const Color(0xFF33595B)
+      ..strokeWidth = 6               // heavier to match Figma look
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     final path = Path()
-      ..moveTo(size.width * .18, size.height * .33)
-      ..lineTo(size.width * .55, size.height * .38)
-      ..lineTo(size.width * .55, size.height * .65)
-      ..lineTo(size.width * .83, size.height * .74);
+      ..moveTo(size.width * .12, size.height * .36) // left start
+      ..lineTo(size.width * .56, size.height * .42) // first segment
+      ..lineTo(size.width * .53, size.height * .72) // vertical-ish segment
+      ..lineTo(size.width * .80, size.height * .78); // final segment
 
     canvas.drawPath(path, p);
 
-    // start pin
-    final start = Offset(size.width * .18, size.height * .33);
-    final end = Offset(size.width * .83, size.height * .74);
+    // Start pin (three concentric circles like plugin)
+    final start = Offset(size.width * .12, size.height * .36);
+    canvas.drawCircle(start, 16, Paint()..color = const Color(0x333F57D9)); // outer halo
+    canvas.drawCircle(start, 10.7, Paint()..color = const Color(0x4C3F57D9)); // mid
+    canvas.drawCircle(start, 5.3, Paint()..color = const Color(0xFF3F57D9)); // dot
 
-    final pinStart = Paint()..color = AppColors.teal.withOpacity(.15);
-    canvas.drawCircle(start, 14, pinStart);
-    canvas.drawCircle(start, 6, Paint()..color = AppColors.teal);
-
-    // end pin
-    final pinEnd = Paint()..color = const Color(0xFFE56B4A);
-    final pinEndHalo = Paint()..color = const Color(0xFFE56B4A).withOpacity(.18);
-    canvas.drawCircle(end, 16, pinEndHalo);
-    canvas.drawCircle(end, 8, pinEnd);
+    // Destination pin (simple round with white center per plugin)
+    final end = Offset(size.width * .80, size.height * .78);
+    final pin = Paint()..color = const Color(0xFFE05A2A);
+    final pinHalo = Paint()..color = const Color(0xFFE05A2A).withOpacity(.16);
+    canvas.drawCircle(end, 20, pinHalo);
+    canvas.drawCircle(end, 12, pin);
+    canvas.drawCircle(end, 6, Paint()..color = Colors.white);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _TrackingBottomCard extends StatelessWidget {
+// ===== Bottom sheet ==========================================================
+class _TrackingBottomSheet extends StatelessWidget {
+  const _TrackingBottomSheet();
+
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Positioned(
-      left: 0, right: 0, bottom: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12)],
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // drag handle
-              Center(
-                child: Container(
-                  width: 72, height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text('Your order is on the way',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  ),
-                  TextButton(
-                    onPressed: Get.back,
-                    child: const Text('Skip', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              Row(
-                children: const [
-                  Expanded(
-                    child: Text('Approximate time of delivery',
-                        style: TextStyle(color: AppColors.subtext)),
-                  ),
-                  Text('4:30 PM', style: TextStyle(fontWeight: FontWeight.w700)),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // timeline
-              const _TimelineItem(
-                dotFilled: true,
-                title: 'Ordered',
-                subtitle: '12:30, 7 Feb 2024',
-              ),
-              const _TimelineItem(
-                dotFilled: true,
-                title: 'Packed',
-                subtitle: '3:10, 7 Feb 2024',
-              ),
-              const _TimelineItem(
-                dotFilled: false,
-                title: 'Delivered',
-                subtitle: 'Not delivered yet',
-                dim: true,
-              ),
-            ],
+        padding: EdgeInsets.only(top: 8, bottom: 24 + bottomInset),
+        decoration: const ShapeDecoration(
+          color: Color(0xFFF4F6F6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
+            ),
           ),
+          shadows: [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 16,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // drag handle
+            Container(
+              width: 64,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // header row inside the card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Your order is on the way',
+                          style: TextStyle(
+                            color: Color(0xFF212121),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          foregroundColor: const Color(0xFF33595B),
+                        ),
+                        onPressed: Get.back,
+                        child: const Text(
+                          'Skip',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(height: 1, color: const Color(0xFFE0E0E0)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ETA + timeline
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Row(
+                    children: const [
+                      Expanded(
+                        child: Text(
+                          'Approximate time of delivery',
+                          style: TextStyle(
+                            color: Color(0xFF212121),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '4:30 PM',
+                        style: TextStyle(
+                          color: Color(0xFF212121),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // timeline column – segment colors match plugin
+                  const _TimelineRow(
+                    title: 'Ordered',
+                    subtitle: '12:30, 7 Feb 2024',
+                    topLineColor: Colors.transparent,
+                    bottomLineColor: Color(0xFF33595B),
+                    dotStyle: _DotStyle.filledTeal,
+                  ),
+                  const SizedBox(height: 14),
+                  const _TimelineRow(
+                    title: 'Packed',
+                    subtitle: '3:10, 7 Feb 2024',
+                    topLineColor: Color(0xFF33595B),
+                    bottomLineColor: Color(0xFFB0BFBF),
+                    dotStyle: _DotStyle.filledTeal,
+                  ),
+                  const SizedBox(height: 14),
+                  const _TimelineRow(
+                    title: 'Delivered',
+                    subtitle: 'Not delivered yet',
+                    dim: true,
+                    topLineColor: Color(0xFFB0BFBF),
+                    bottomLineColor: Colors.transparent,
+                    dotStyle: _DotStyle.hollowGray, // inner 16px like plugin
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _TimelineItem extends StatelessWidget {
-  const _TimelineItem({
-    required this.dotFilled,
+// ===== Timeline bits =========================================================
+enum _DotStyle { filledTeal, hollowGray }
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
     required this.title,
     required this.subtitle,
+    required this.topLineColor,
+    required this.bottomLineColor,
+    required this.dotStyle,
     this.dim = false,
   });
 
-  final bool dotFilled;
   final String title;
   final String subtitle;
+  final Color topLineColor;
+  final Color bottomLineColor;
+  final _DotStyle dotStyle;
   final bool dim;
 
   @override
   Widget build(BuildContext context) {
-    final dotColor = dotFilled ? AppColors.teal : AppColors.divider;
-    final tColor = dim ? AppColors.subtext : AppColors.text;
+    final titleColor = dim ? const Color(0xFF212121) : const Color(0xFF212121);
+    final subColor = dim ? const Color(0xFF4D4D4D) : const Color(0xFF4D4D4D);
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // dot + connector
-          Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // left: dot + two line segments stacked
+        SizedBox(
+          width: 28,
+          child: Column(
             children: [
-              Container(
-                width: 18, height: 18,
-                decoration: BoxDecoration(
-                  color: dotFilled ? AppColors.teal : Colors.transparent,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: dotColor, width: 2),
-                ),
+              // top connector
+              Container(width: 2, height: 10, color: topLineColor),
+              // dot (20x20 area)
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (dotStyle == _DotStyle.filledTeal)
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF33595B),
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  else
+                  // hollow gray look in plugin (inner 16 light gray)
+                    Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFB0BFBF),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              Container(
-                width: 2, height: 26,
-                color: AppColors.divider,
-              ),
+              // bottom connector (70px in plugin, we use a compact 26 here and spacing above/below equals)
+              Container(width: 2, height: 26, color: bottomLineColor),
             ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(color: tColor, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                Text(subtitle, style: const TextStyle(color: AppColors.subtext)),
-              ],
-            ),
+        ),
+        const SizedBox(width: 8),
+        // right labels
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  )),
+              const SizedBox(height: 4),
+              Text(subtitle,
+                  style: TextStyle(
+                    color: subColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  )),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

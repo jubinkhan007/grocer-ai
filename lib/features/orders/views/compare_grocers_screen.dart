@@ -1,45 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
 import '../../../ui/theme/app_theme.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 
-// ----------------------------- DATA (static for now) -----------------------------
-class _SummaryStore {
-  final String name;
-  final String when;
-  final String priceNow;
-  final String priceOld;
-  final String items;
+/// Palette taken from the Figma export
+const _statusBar = Color(0xFF002C2E);
+const _teal = Color(0xFF33595B);
+const _cardBg = Color(0xFFFEFEFE);
+const _tileIconBg = Color(0xFFF4F6F6);
+const _textPrimary = Color(0xFF212121);
+const _textSecondary = Color(0xFF4D4D4D);
+const _muted = Color(0xFF6A6A6A);
+const _dot = Color(0xFF8AA0A1);
+const _divider = Color(0xFFDEE0E0);
 
-  const _SummaryStore(this.name, this.when, this.priceNow, this.priceOld, this.items);
-}
-
-class _ItemRowData {
-  final String emoji;
-  final String name;
-  final String unit;
-  final String price;
-  final bool na;
-
-  const _ItemRowData({
-    required this.emoji,
-    required this.name,
-    required this.unit,
-    required this.price,
-    this.na = false,
-  });
-}
-
-// Reusable mock items
-const _items = <_ItemRowData>[
-  _ItemRowData(emoji: '🍚', name: 'Royal Basmati Rice', unit: '\$8.75 unit', price: '\$26.25'),
-  _ItemRowData(emoji: '🫙', name: 'Sunny Valley Olive Oil', unit: '\$75.30 unit', price: '\$23.8'),
-  _ItemRowData(emoji: '🥕', name: 'Golden Harvest Quinoa', unit: '\$4.29 unit', price: '\$42.7'),
-  _ItemRowData(emoji: '🍯', name: 'Maple Grove Honey', unit: '\$12.50 unit', price: '\$34.7'),
-  _ItemRowData(emoji: '🧂', name: 'Emerald Isle Sea Salt', unit: '\$5.50 unit', price: '\$28.3'),
-  _ItemRowData(emoji: '🧃', name: 'Crisp Apple Juice', unit: '\$3.49 unit', price: '\$31.4'),
-  _ItemRowData(emoji: '☕️', name: 'Mountain Coffee Beans', unit: '\$19.99 unit', price: '\$29.9'),
-];
-
-// ----------------------------- ENTRY SCREEN -----------------------------
 class CompareGrocersScreen extends StatefulWidget {
   const CompareGrocersScreen({super.key});
 
@@ -47,90 +22,27 @@ class CompareGrocersScreen extends StatefulWidget {
   State<CompareGrocersScreen> createState() => _CompareGrocersScreenState();
 }
 
-class _CompareGrocersScreenState extends State<CompareGrocersScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 2, vsync: this);
-    // TODO: call compare endpoint here and setState with results
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
+class _CompareGrocersScreenState extends State<CompareGrocersScreen> {
+  bool _live = false; // false = Comparison Summary, true = Live Bid Status
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.teal,
-            elevation: 0,
-            pinned: true,
-            collapsedHeight: 72,
-            titleSpacing: 0,
-            title: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: const [
-                    BackButton(color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('Comparison Summary',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        )),
-                    Spacer(),
-                    Icon(Icons.refresh, color: Colors.white, size: 18),
-                    SizedBox(width: 6),
-                    Text('Rebid',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        )),
-                    SizedBox(width: 8),
-                  ],
-                ),
-              ),
-            ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(46),
-              child: Container(
-                color: AppColors.teal,
-                alignment: Alignment.centerLeft,
-                child: TabBar(
-                  controller: _tab,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  indicatorColor: Colors.white,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white70,
-                  indicatorWeight: 3,
-                  tabs: const [
-                    Tab(text: 'Comparison Summary'),
-                    Tab(text: 'Live Bid Status'),
-                  ],
-                ),
-              ),
-            ),
+      backgroundColor: const Color(0xFFF4F6F6),
+      body: Column(
+        children: [
+          // Fake status bar color strip (matches Figma's very dark green)
+          _TopHeader(
+            live: _live,
+            onTapAction: () => setState(() => _live = !_live),
           ),
 
-          SliverFillRemaining(
-            hasScrollBody: true,
-            child: TabBarView(
-              controller: _tab,
-              children: const [
-                _SummaryTab(),
-                _LiveBidTab(),
+          // CONTENT
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 19, 24, 24),
+              children: [
+                if (!_live) ..._summaryTiles(context) else ..._liveTiles(context),
               ],
             ),
           ),
@@ -138,470 +50,437 @@ class _CompareGrocersScreenState extends State<CompareGrocersScreen>
       ),
     );
   }
-}
 
-// ----------------------------- TAB 1: SUMMARY -----------------------------
-class _SummaryTab extends StatelessWidget {
-  const _SummaryTab();
+  // --------------------- DATA (exact order/values from the Figma) ---------------------
 
-  @override
-  Widget build(BuildContext context) {
-    // static list (match mock order)
-    const list = <_SummaryStore>[
-      _SummaryStore('Walmart', '25 Dec 2024  •  6:30pm', '\$210', '\$250', '15 items'),
-      _SummaryStore('Kroger',  '14 Mar 2025  •  3:45pm', '\$350', '\$345', '22 items'),
-      _SummaryStore('Aldi',    '7 Aug 2023   •  11:15am', '\$320', '\$360', '19 items'),
-      _SummaryStore('Fred Myers', '7 Aug 2023 •  9:45am', '\$350', '\$380', '14 items'),
-      _SummaryStore('United Supermarkets', '7 Aug 2023 •  2:30pm', '\$400', '\$420', '12 items'),
-    ];
+  List<Widget> _summaryTiles(BuildContext context) =>
+      [
+        _BidTile(
+          logo: Image.asset('assets/images/walmart.png'),
+          name: 'Walmart',
+          date: '25 Dec 2024',
+          time: '6:30pm',
+          now: '\$210',
+          old: '\$250',
+          items: '15 items',
+          onTap: () => _openStore(context, 'Walmart'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/kroger.png'),
+          name: 'Kroger',
+          date: '14 Mar 2025',
+          time: '3:45pm',
+          now: '\$350',
+          old: '\$345',
+          items: '22 items',
+          onTap: () => _openStore(context, 'Kroger'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/aldi.png'),
+          name: 'Aldi',
+          date: '7 Aug 2023',
+          time: '11:15am',
+          now: '\$320',
+          old: '\$360',
+          items: '19 items',
+          onTap: () => _openStore(context, 'Aldi'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/fred_meyer.png'),
+          name: 'Fred Myers',
+          date: '7 Aug 2023',
+          time: '9:45am',
+          now: '\$350',
+          old: '\$380',
+          items: '14 items',
+          onTap: () => _openStore(context, 'Fred Myers'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/united_supermarkets.png'),
+          name: 'United Supermarkets',
+          date: '7 Aug 2023',
+          time: '2:30pm',
+          now: '\$400',
+          old: '\$420',
+          items: '12 items',
+          onTap: () => _openStore(context, 'United Supermarkets'),
+        ),
+      ];
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-      itemBuilder: (_, i) {
-        final s = list[i];
-        return _StoreSummaryTile(
-          name: s.name,
-          when: s.when,
-          priceNow: s.priceNow,
-          priceOld: s.priceOld,
-          items: s.items,
-          onTap: () {
-            // go to detail compare for this store
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => CompareStoreDetailScreen(
-                storeName: s.name,
-                items: _items,
-                totalNow: '\$400',
-                totalOld: '\$482',
-                showNAForSome: s.name == 'Kroger', // to match the 4th mock
-              ),
-            ));
-          },
-        );
-      },
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemCount: list.length,
+  List<Widget> _liveTiles(BuildContext context) =>
+      [
+        _BidTile(
+          logo: Image.asset('assets/images/kroger.png'),
+          name: 'Kroger',
+          date: '14 Mar 2025',
+          time: '3:45pm',
+          now: '\$210',
+          old: '\$250',
+          items: '11 items',
+          onTap: () => _openStore(context, 'Kroger'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/united_supermarkets.png'),
+          name: 'United Supermarkets',
+          date: '7 Aug 2023',
+          time: '11:15am',
+          now: '\$350',
+          old: '\$345',
+          items: '20 items',
+          onTap: () => _openStore(context, 'United Supermarkets'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/aldi.png'),
+          name: 'Aldi',
+          date: '7 Aug 2023',
+          time: '5:55pm',
+          now: '\$320',
+          old: '\$360',
+          items: '15 items',
+          onTap: () => _openStore(context, 'Aldi'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/walmart.png'),
+          name: 'Walmart',
+          date: '25 Dec 2024',
+          time: '6:30pm',
+          now: '\$350',
+          old: '\$380',
+          items: '18 items',
+          onTap: () => _openStore(context, 'Walmart'),
+        ),
+        const SizedBox(height: 12),
+        _BidTile(
+          logo: Image.asset('assets/images/fred_meyer.png'),
+          name: 'Fred Myers',
+          date: '7 Aug 2023',
+          time: '7:35am',
+          now: '\$400',
+          old: '\$420',
+          items: '17 items',
+          onTap: () => _openStore(context, 'Fred Myers'),
+        ),
+      ];
+
+  void _openStore(BuildContext context, String name) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StoreOrderScreen(
+          storeName: name,
+          fromCompare: true, // ⬅️ this makes the CTA read “Checkout”
+        ),
+      ),
     );
   }
 }
-
-class _StoreSummaryTile extends StatelessWidget {
-  const _StoreSummaryTile({
+/// A single white card from the mock with exact paddings, type, dividers, etc.
+class _BidTile extends StatelessWidget {
+  const _BidTile({
+    required this.logo,
     required this.name,
-    required this.when,
-    required this.priceNow,
-    required this.priceOld,
+    required this.date,
+    required this.time,
+    required this.now,
+    required this.old,
     required this.items,
     required this.onTap,
   });
 
-  final String name, when, priceNow, priceOld, items;
+  final Widget logo;
+  final String name, date, time, now, old, items;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
+    final card = Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _logoBubble(),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text)),
-                  const SizedBox(height: 4),
-                  Text(when, style: const TextStyle(color: AppColors.subtext)),
-                ],
+            // 48x48 logo box
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _tileIconBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(child: logo),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  children: [
-                    Text(priceNow,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w800, color: AppColors.text)),
-                    const SizedBox(width: 6),
-                    Text(priceOld,
-                        style: const TextStyle(
-                          color: AppColors.subtext,
-                          decoration: TextDecoration.lineThrough,
-                        )),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(items, style: const TextStyle(color: AppColors.subtext)),
-              ],
+            const SizedBox(width: 16),
+
+            // Make the middle area flexible so it can shrink if needed
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // LEFT: name + date/time (flexible with ellipsis)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _teal,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                date,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const _Dot(),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                time,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Divider with no reserved width; padding comes from SizedBox
+                  const SizedBox(width: 12),
+                  const SizedBox(
+                    height: 39,
+                    child: VerticalDivider(
+                      color: _divider,
+                      thickness: 1,
+                      width: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // RIGHT: prices + items
+                  IntrinsicWidth(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              now,
+                              style: const TextStyle(
+                                color: _textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              old,
+                              style: const TextStyle(
+                                color: _muted,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                decoration: TextDecoration.lineThrough,
+                                decorationThickness: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          items,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: _textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
-  }
 
-  Widget _logoBubble() => Container(
-    width: 44,
-    height: 44,
-    decoration: BoxDecoration(
-      color: AppColors.bg,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    alignment: Alignment.center,
-    child: const Icon(Icons.store_rounded, color: AppColors.teal),
-  );
+    // Make the whole card tappable without changing its look
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: card,
+      ),
+    );
+  }
 }
 
-// ----------------------------- TAB 2: LIVE BID -----------------------------
-class _LiveBidTab extends StatelessWidget {
-  const _LiveBidTab();
+/// Tiny green dot between date and time (exact color/size from Figma)
+class _Dot extends StatelessWidget {
+  const _Dot();
 
   @override
   Widget build(BuildContext context) {
-    // same content layout, header text differs to match the “Live Bid Status” mock
-    const list = <_SummaryStore>[
-      _SummaryStore('Kroger', '14 Mar 2025  •  3:45pm', '\$210', '\$250', '11 items'),
-      _SummaryStore('United Supermarkets', '7 Aug 2023 •  11:15am', '\$350', '\$345', '20 items'),
-      _SummaryStore('Aldi', '7 Aug 2023 •  5:55pm', '\$320', '\$360', '15 items'),
-      _SummaryStore('Walmart', '25 Dec 2024 •  6:30pm', '\$350', '\$380', '18 items'),
-      _SummaryStore('Fred Myers', '7 Aug 2023 •  7:35am', '\$400', '\$420', '17 items'),
-    ];
+    return Container(
+      width: 4,
+      height: 4,
+      decoration: const BoxDecoration(color: _dot, shape: BoxShape.circle),
+    );
+  }
+}
+
+/// Gray logo box with a placeholder image size matching Figma exports
+class _LogoBox extends StatelessWidget {
+  const _LogoBox._(this.w, this.h);
+  final double w;
+  final double h;
+
+  static Widget mock({double width = 24, double height = 24}) =>
+      _LogoBox._(width, height);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: w,
+      height: h,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+class _TopHeader extends StatelessWidget {
+  const _TopHeader({required this.live, required this.onTapAction});
+  final bool live;
+  final VoidCallback onTapAction;
+
+  @override
+  Widget build(BuildContext context) {
+    // match dark icons on dark strip
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: _statusBar,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
+        // status bar strip (48.14 in Figma; 48 is fine)
+        const SizedBox(height: 48, width: double.infinity, child: ColoredBox(color: _statusBar)),
+        // toolbar (68 = 116 - 48)
         Container(
-          color: AppColors.bg,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          height: 68,
+          width: double.infinity,
+          color: _teal,
+          padding: const EdgeInsets.symmetric(horizontal: 0),
           child: Row(
-            children: const [
-              Icon(Icons.schedule, color: AppColors.subtext, size: 16),
-              SizedBox(width: 6),
-              Text('1:25',
-                  style:
-                  TextStyle(color: AppColors.subtext, fontWeight: FontWeight.w600)),
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // back chevron (14x20-ish visual) without extra hitbox padding
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                splashRadius: 22,
+                icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 0),
+              // title (truncates to keep chip visible)
+              Expanded(
+                child: Text(
+                  live ? 'Live Bid Status' : 'Comparison Summary',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFFEFEFE),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              // action chip: Rebid (with refresh icon) OR timer
+              TextButton(
+                onPressed: onTapAction,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: _teal, // same as bar (Figma)
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!live) ...[
+                      const Icon(Icons.refresh, size: 16, color: Colors.white),
+                      const SizedBox(width: 4),
+                      const Text('Rebid',
+                          style: TextStyle(
+                            color: Color(0xFFFEFEFE),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          )),
+                    ] else ...[
+                      const Text('1:25',
+                          style: TextStyle(
+                            color: Color(0xFFFEFEFE),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          )),
+                    ],
+                  ],
+                ),
+              ),
             ],
-          ),
-        ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 24),
-            itemBuilder: (_, i) {
-              final s = list[i];
-              return _StoreSummaryTile(
-                name: s.name,
-                when: s.when,
-                priceNow: s.priceNow,
-                priceOld: s.priceOld,
-                items: s.items,
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => CompareStoreDetailScreen(
-                      storeName: s.name,
-                      items: _items,
-                      totalNow: '\$400',
-                      totalOld: '\$482',
-                      showNAForSome: s.name == 'Kroger',
-                    ),
-                  ));
-                },
-              );
-            },
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemCount: list.length,
           ),
         ),
       ],
     );
   }
-}
-
-// ----------------------------- STORE DETAIL (Walmart/Kroger) -----------------------------
-class CompareStoreDetailScreen extends StatelessWidget {
-  const CompareStoreDetailScreen({
-    super.key,
-    required this.storeName,
-    required this.items,
-    required this.totalNow,
-    required this.totalOld,
-    this.showNAForSome = false,
-  });
-
-  final String storeName;
-  final List<_ItemRowData> items;
-  final String totalNow;
-  final String totalOld;
-  final bool showNAForSome;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                backgroundColor: AppColors.teal,
-                elevation: 0,
-                collapsedHeight: 72,
-                titleSpacing: 0,
-                title: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      children: [
-                        const BackButton(color: Colors.white),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: Colors.amber, size: 22),
-                        const SizedBox(width: 8),
-                        Text(storeName,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800)),
-                        const Spacer(),
-                        TextButton.icon(
-                          onPressed: () {
-                            // TODO: open add item overlay
-                          },
-                          icon: const Icon(Icons.add, color: Colors.white),
-                          label: const Text('Add item',
-                              style: TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.w700)),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Header row: "Order" + count + total pill
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    children: [
-                      const Text('Order',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.text)),
-                      const SizedBox(width: 8),
-                      _badge('${items.length}'),
-                      const Spacer(),
-                      _totalPill(totalNow, totalOld),
-                    ],
-                  ),
-                ),
-              ),
-
-              SliverList.builder(
-                itemCount: items.length,
-                itemBuilder: (context, i) {
-                  final it = items[i];
-                  // mark a couple as N/A for the Kroger mock
-                  final na = showNAForSome && (i == 1 || i == 2);
-                  return _CompareItemRow(
-                    data: it.copyWith(na: na),
-                  );
-                },
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
-            ],
-          ),
-
-          // Checkout button
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SafeArea(
-              minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.teal,
-                  borderRadius: BorderRadius.circular(36),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(.12),
-                      blurRadius: 14,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    // TODO: checkout for selected store
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(36),
-                    ),
-                  ),
-                  child: const Text('Checkout',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _badge(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(
-      color: const Color(0xFF1F6C67).withOpacity(.12),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text(text,
-        style: const TextStyle(
-            color: AppColors.teal, fontWeight: FontWeight.w700)),
-  );
-
-  Widget _totalPill(String now, String old) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F6C67).withOpacity(.12),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Text(now,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w800, color: AppColors.teal, fontSize: 16)),
-          const SizedBox(width: 8),
-          Text(old,
-              style: const TextStyle(
-                color: AppColors.teal,
-                decoration: TextDecoration.lineThrough,
-                decorationThickness: 2,
-              )),
-        ],
-      ),
-    );
-  }
-}
-
-// ----------------------------- ITEM ROW -----------------------------
-class _CompareItemRow extends StatelessWidget {
-  const _CompareItemRow({required this.data});
-  final _ItemRowData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            _emoji(data.emoji),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(data.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text)),
-                  const SizedBox(height: 4),
-                  Text(data.unit, style: const TextStyle(color: AppColors.subtext)),
-                  const SizedBox(height: 2),
-                  Text(data.price,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.text)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            data.na ? _naTag() : const _QtyPillSmall(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _emoji(String e) => Container(
-    width: 52,
-    height: 52,
-    decoration: BoxDecoration(
-      color: AppColors.bg,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    alignment: Alignment.center,
-    child: Text(e, style: const TextStyle(fontSize: 24)),
-  );
-
-  Widget _naTag() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF2E8E6),
-      borderRadius: BorderRadius.circular(999),
-    ),
-    child: const Text('N/A',
-        style: TextStyle(
-          color: Color(0xFFB06054),
-          fontWeight: FontWeight.w700,
-        )),
-  );
-}
-
-class _QtyPillSmall extends StatelessWidget {
-  const _QtyPillSmall();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE7EFEF),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          _circle(Icons.remove),
-          const SizedBox(width: 10),
-          const Text('3',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.text)),
-          const SizedBox(width: 10),
-          _circle(Icons.add),
-        ],
-      ),
-    );
-  }
-
-  Widget _circle(IconData icon) => Container(
-    width: 32,
-    height: 32,
-    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-    child: Icon(icon, color: AppColors.text),
-  );
-}
-
-// tiny helper to copy with NA flag
-extension on _ItemRowData {
-  _ItemRowData copyWith({bool? na}) =>
-      _ItemRowData(emoji: emoji, name: name, unit: unit, price: price, na: na ?? this.na);
 }

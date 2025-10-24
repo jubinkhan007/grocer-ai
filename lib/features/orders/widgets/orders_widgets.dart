@@ -18,40 +18,52 @@ class TitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.teal,
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+      color: const Color(0xFF33595B),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
             IconButton(
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              padding: EdgeInsets.zero,
               onPressed: Get.back,
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20), // Figma 14x20-ish
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             const Text(
               'Order',
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                color: Color(0xFFFEFEFE),
+                fontSize: 20,              // Figma
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const Spacer(),
             if (showRange)
               InkWell(
                 onTap: onRangeTap,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(4),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF33595B), // same as bar per plugin
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
-                    children: [
+                    children: const [
+                      // Down arrow (16) shown on the left in plugin
+                      Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
                       Text(
-                        rangeText,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                        'Last 3 months',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFFEFEFE),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white),
                     ],
                   ),
                 ),
@@ -63,52 +75,40 @@ class TitleBar extends StatelessWidget {
   }
 }
 
-/// ===== Segmented Button =====
+/// ===== Segmented Button (exact Figma styles) =====
 class SegButton extends StatelessWidget {
   const SegButton({
     required this.text,
     required this.selected,
     required this.onTap,
-    this.filled = false,
   });
 
   final String text;
   final bool selected;
-  final bool filled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final bg = filled
-        ? AppColors.teal.withOpacity(selected ? 1 : 0.12)
-        : (selected ? AppColors.teal : Colors.transparent);
-
-    final border = filled
-        ? Border.all(color: AppColors.teal, width: 1.2)
-        : Border.all(color: selected ? Colors.transparent : AppColors.teal, width: 1.2);
-
-    final fg = filled
-        ? (selected ? Colors.white : AppColors.text.withOpacity(.55))
-        : (selected ? Colors.white : AppColors.text.withOpacity(.55));
-
     return Expanded(
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Container(
-          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16), // plugin
           decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-            border: border,
+            color: selected ? const Color(0xFF33595B) : Colors.transparent, // selected = filled
+            borderRadius: BorderRadius.circular(8),
+            border: selected
+                ? null
+                : Border.all(color: const Color(0xFF33595B), width: 1),     // unselected = outline
           ),
           alignment: Alignment.center,
           child: Text(
             text,
             style: TextStyle(
-              color: fg,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              color: selected ? const Color(0xFFE9E9E9) : const Color(0xFF4D4D4D),
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
@@ -119,15 +119,18 @@ class SegButton extends StatelessWidget {
 
 /// ===== Current tab content (one card from mock) =====
 class CurrentList extends StatelessWidget {
+  const CurrentList({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      // plugin shows a little breathing space below the segment
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: Column(
         children: const [
           OrderTile(
             data: OrderTileData(
-              logo: 'assets/brands/walmart.png',
+              logo: 'assets/images/walmart.png',
               brand: 'Walmart',
               status: OrderStatus.onTheWay,
               priceNow: '\$400',
@@ -143,7 +146,8 @@ class CurrentList extends StatelessWidget {
 
 /// ===== History group =====
 class HistoryGroup extends StatelessWidget {
-  const HistoryGroup({super.key,
+  const HistoryGroup({
+    super.key,
     required this.dateLabel,
     required this.tiles,
   });
@@ -154,19 +158,20 @@ class HistoryGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+      // plugin: 24 top to date, 16 to first card
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             dateLabel,
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF001415),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           ...tiles.map((t) => OrderTile(data: t)).toList(),
         ],
       ),
@@ -196,28 +201,29 @@ class OrderTileData {
 }
 
 class OrderTile extends StatelessWidget {
-  const OrderTile({required this.data});
+  const OrderTile({super.key, required this.data});
   final OrderTileData data;
 
-  Color get statusBg {
+  // Exact badge colors per plugin
+  Color get _statusBg {
     switch (data.status) {
       case OrderStatus.onTheWay:
-        return const Color(0xFFFFF2CC); // pale yellow
+        return const Color(0xFFFEF1D7);
       case OrderStatus.completed:
-        return const Color(0xFFE5F4EA); // pale green
+        return const Color(0xFFE2F2E9);
       case OrderStatus.cancelled:
-        return const Color(0xFFFCE3DF); // pale red
+        return const Color(0xFFF7E4DD);
     }
   }
 
   Color get _statusFg {
     switch (data.status) {
       case OrderStatus.onTheWay:
-        return const Color(0xFF9A7D1E);
+        return const Color(0xFF956703);
       case OrderStatus.completed:
-        return const Color(0xFF2E7D32);
+        return const Color(0xFF3E8D5E);
       case OrderStatus.cancelled:
-        return const Color(0xFFD84343);
+        return const Color(0xFFBA4012);
     }
   }
 
@@ -235,98 +241,118 @@ class OrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // plugin
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(.03), blurRadius: 6, offset: const Offset(0, 2)),
-        ],
+        color: const Color(0xFFFEFEFE),
+        borderRadius: BorderRadius.circular(8), // plugin
+        // plugin cards appear flat (keep shadow off)
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // logo
+          // Logo square
           Container(
-            width: 56,
-            height: 56,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: AppColors.bg,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFF4F6F6),
+              borderRadius: BorderRadius.circular(4),
             ),
             alignment: Alignment.center,
             child: Image.asset(
               data.logo,
-              width: 30,
-              height: 30,
+              width: 24,
+              height: 24,
               errorBuilder: (_, __, ___) =>
-              const Icon(Icons.storefront_rounded, color: AppColors.teal),
+              const Icon(Icons.storefront_rounded, color: Color(0xFF33595B)),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
 
-          // name + status
+          // Brand + status
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data.brand,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.text,
-                    )),
+                Text(
+                  data.brand,
+                  style: const TextStyle(
+                    color: Color(0xFF33595B),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(999),
+                    color: _statusBg,
+                    borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Text(_statusText,
-                      style: TextStyle(
-                        color: _statusFg,
-                        fontWeight: FontWeight.w700,
-                      )),
+                  child: Text(
+                    _statusText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _statusFg,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // divider
-          Container(width: 1, height: 44, color: AppColors.divider),
+          // Divider
+          Container(
+            width: 1,
+            height: 39, // plugin
+            color: const Color(0xFFDEE0E0),
+          ),
 
-          // price + items
+          // Price + items
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Row(
                 children: [
-                  Text(data.priceNow,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.text,
-                      )),
-                  const SizedBox(width: 8),
+                  Text(
+                    data.priceNow,
+                    style: const TextStyle(
+                      color: Color(0xFF212121),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4), // plugin
                   Text(
                     data.priceOld,
                     style: const TextStyle(
-                      color: AppColors.subtext,
+                      color: Color(0xFF6A6A6A),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
                       decoration: TextDecoration.lineThrough,
-                      fontSize: 18,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                data.itemsText,
-                style: const TextStyle(color: AppColors.subtext, fontSize: 15),
+              const SizedBox(height: 4), // plugin
+              SizedBox(
+                width: 77, // plugin width cap (visual)
+                child: Text(
+                  data.itemsText,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Color(0xFF4D4D4D),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );

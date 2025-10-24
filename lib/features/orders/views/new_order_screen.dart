@@ -13,267 +13,291 @@ class NewOrderScreen extends StatefulWidget {
 }
 
 class _NewOrderScreenState extends State<NewOrderScreen> {
-  // bottom nav index (Order tab)
   int _tab = 2;
 
-  // -------- Local UI state (swap with controller later) ----------
-  bool outsidePurchase = false; // yes = true, no = false
-  bool awayFromHome = false;
-  bool guestsThisCycle = false;
+  // Defaults chosen to match the Figma screenshots
+  bool outsidePurchase = true;   // Yes
+  bool awayFromHome = false;     // No
+  bool guestsThisCycle = false;  // No
 
-  final TextEditingController _note = TextEditingController(text: '');
-  final List<_ReceiptFile> _receipts = []; // mocked “attachments”
+  final TextEditingController _note =
+  TextEditingController(text: 'Yes, I do have.');
+  final List<_ReceiptFile> _receipts = [];
 
-  // weeks chooser (only visible when awayFromHome = true)
-  final List<int> _pickedWeeks = [2]; // example default
-  final List<int> _availableWeeks = [1, 2, 3, 4, 5, 6];
-
-  // -------- Stubs for later integration ----------
-  Future<void> _requestMediaPermission() async {
-    // TODO: request permission through permission_handler
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  }
-
-  Future<void> _pickReceipt() async {
-    // TODO: integrate file_picker or image_picker
-    // For now, push a mocked file to show the UI
-    setState(() {
-      _receipts.add(
-        _ReceiptFile(name: 'Order-${22 + _receipts.length}June.pdf', sizeKb: 600 - 60 * _receipts.length),
-      );
-    });
-  }
-
-  // ------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    // Figma page background
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.teal,
-            elevation: 0,
-            pinned: true,
-            collapsedHeight: 72,
-            titleSpacing: 0,
-            title: Container(
-              color: AppColors.teal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: const [
-                    BackButton(color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('New order',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        )),
-                    Spacer(),
-                    Icon(Icons.notifications_none_rounded,
-                        color: Colors.white, size: 22),
-                    SizedBox(width: 8),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-              child: Column(
-                children: [
-                  // 1) Outside purchase?
-                  _CardBlock(
-                    title: 'Any outside purchase to report since your last order with GrocerAI?',
-                    trailing: _UploadRow(
-                      hasFiles: _receipts.isNotEmpty,
-                      onTap: () async {
-                        // mimic Android-style permission prompt on first press
-                        if (_receipts.isEmpty) {
-                          await _showPermissionPrompt(context);
-                          await _requestMediaPermission();
-                        }
-                        _pickReceipt();
-                      },
-                      label: _receipts.isEmpty ? 'Add receipt' : 'Add receipt',
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFFF4F6F6),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // Header bar exactly like Figma (teal, 24px side padding, 20px vertical)
+              SliverAppBar(
+                automaticallyImplyLeading: false,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: const Color(0xFF33595B),
+                collapsedHeight: 88, // ~ SafeArea top + 20 padding + content height
+                toolbarHeight: 88,
+                titleSpacing: 0,
+                title: Container(
+                  width: double.infinity,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  color: const Color(0xFF33595B),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Row(
                       children: [
-                        _YesNo(
-                          value: outsidePurchase,
-                          onChanged: (v) => setState(() => outsidePurchase = v),
-                        ),
-                        if (_receipts.isNotEmpty) const SizedBox(height: 10),
-                        ..._receipts.map((f) => _ReceiptTile(
-                          file: f,
-                          onRemove: () => setState(() => _receipts.remove(f)),
-                        )),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 2) Away from home?
-                  _CardBlock(
-                    title: 'Are you planning to be out of home for days?',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _YesNo(
-                          value: awayFromHome,
-                          onChanged: (v) => setState(() => awayFromHome = v),
-                        ),
-                        if (awayFromHome) ...[
-                          const SizedBox(height: 16),
-                          const Text('How many weeks?',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 16)),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: -6,
-                            children: _availableWeeks.map((w) {
-                              final selected = _pickedWeeks.contains(w);
-                              return ChoiceChip(
-                                label: Text('${w == 1 ? '1 week' : '$w weeks'}'),
-                                selected: selected,
-                                onSelected: (_) {
-                                  setState(() {
-                                    if (selected) {
-                                      _pickedWeeks.remove(w);
-                                    } else {
-                                      _pickedWeeks.add(w);
-                                    }
-                                  });
-                                },
-                                selectedColor: AppColors.teal.withOpacity(.12),
-                                backgroundColor: Colors.white,
-                                labelStyle: TextStyle(
-                                  color: selected ? AppColors.teal : AppColors.subtext,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                side: BorderSide.none,
-                              );
-                            }).toList(),
+                        const BackButton(color: Colors.white),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'New order',
+                          style: TextStyle(
+                            color: Color(0xFFFEFEFE),
+                            fontSize: 20,
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 6),
-                          Row(
+                        ),
+                        const Spacer(),
+                        // notification pill 32x32 with bell (matches Figma touch target)
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF33595B),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          alignment: Alignment.center,
+                          child: Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              const Icon(Icons.add, size: 18, color: AppColors.subtext),
-                              const SizedBox(width: 6),
-                              Text('Add preferable weeks',
-                                  style: TextStyle(
-                                      color: AppColors.teal.withOpacity(.9),
-                                      fontWeight: FontWeight.w600)),
+                              const Icon(Icons.notifications_none_rounded,
+                                  size: 20, color: Colors.white),
+                              Positioned(
+                                right: -1,
+                                top: -1,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFBA4012),
+                                    borderRadius: BorderRadius.circular(99),
+                                    border: Border.all(
+                                        color: const Color(0xFF33595B),
+                                        width: 1.5),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                ),
+              ),
 
-                  // 3) Guests?
-                  _CardBlock(
-                    title: 'Are you expecting guests this order cycle?',
-                    child: _YesNo(
-                      value: guestsThisCycle,
-                      onChanged: (v) => setState(() => guestsThisCycle = v),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 4) Additional info
-                  _CardBlock(
-                    title: 'Do you have any additional information to share?',
-                    child: Container(
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      alignment: Alignment.center,
-                      child: TextField(
-                        controller: _note,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Write here...',
+              // Content column at x=24, width=382 as in Figma
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                  const EdgeInsets.fromLTRB(24, 24 /* top = 135 in figma minus header*/, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Card 1: Outside purchase
+                      _CardBlockFigma(
+                        title:
+                        'Any outside purchase to report since your last order with GrocerAI?',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _RadioPillFigma(
+                                  label: 'Yes',
+                                  selected: outsidePurchase,
+                                  onTap: () =>
+                                      setState(() => outsidePurchase = true),
+                                ),
+                                _RadioPillFigma(
+                                  label: 'No',
+                                  selected: !outsidePurchase,
+                                  onTap: () =>
+                                      setState(() => outsidePurchase = false),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _UploadBtnFigma(
+                              label: 'Upload receipt',
+                              onTap: () => setState(() {
+                                _receipts.add(_ReceiptFile(
+                                    name: 'receipt_${_receipts.length + 1}.pdf',
+                                    sizeKb: 420));
+                              }),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                      const SizedBox(height: 24),
 
-                  // 5) Participating stores (static)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Please click on the participating grocery store for the\n'
-                          'grocerAI-generated order list',
-                      style: TextStyle(
-                        color: AppColors.subtext,
-                        height: 1.25,
+                      // Card 2: Away from home
+                      _CardBlockFigma(
+                        title:
+                        'Are you planning to be out of home for days?',
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _RadioPillFigma(
+                              label: 'Yes',
+                              selected: awayFromHome,
+                              onTap: () =>
+                                  setState(() => awayFromHome = true),
+                            ),
+                            _RadioPillFigma(
+                              label: 'No',
+                              selected: !awayFromHome,
+                              onTap: () =>
+                                  setState(() => awayFromHome = false),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: const [
-                      _StorePill(label: 'Walmart', asset: 'assets/images/walmart.png'),
-                      SizedBox(width: 12),
-                      _StorePill(label: 'Kroger', asset: 'assets/images/kroger.png'),
-                      SizedBox(width: 12),
-                      _StorePill(label: 'Aldi', asset: 'assets/images/aldi.png'),
+                      const SizedBox(height: 24),
+
+                      // Card 3: Guests
+                      _CardBlockFigma(
+                        title:
+                        'Are you expecting guests this order cycle?',
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _RadioPillFigma(
+                              label: 'Yes',
+                              selected: guestsThisCycle,
+                              onTap: () =>
+                                  setState(() => guestsThisCycle = true),
+                            ),
+                            _RadioPillFigma(
+                              label: 'No',
+                              selected: !guestsThisCycle,
+                              onTap: () =>
+                                  setState(() => guestsThisCycle = false),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Extra info block (static text to match screenshot)
+                      Text(
+                        'Do you have any additional information to share?',
+                        style: const TextStyle(
+                          color: Color(0xFF212121),
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 140,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEFEFE),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          _note.text,
+                          style: const TextStyle(
+                            color: Color(0xFF212121),
+                            fontSize: 14,
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Participating stores header
+                      Text(
+                        'Please click on the participating grocery store for the\n'
+                            'grocerAI-generated order list',
+                        style: const TextStyle(
+                          color: Color(0xFF212121),
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Three 116px-wide store pills with 25px spacing (as in Figma)
+                      Row(
+                        children: const [
+                          Expanded(child: _StoreBox(label: 'Walmart', dimmedBg: true)),
+                          SizedBox(width: 12), // visual spacing similar to figma
+                          Expanded(child: _StoreBox(label: 'Kroger')),
+                          SizedBox(width: 12),
+                          Expanded(child: _StoreBox(label: 'Aldi')),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Continue button (382x56, radius 100)
+                      Center(
+                        child: SizedBox(
+                          width: 382,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _onContinue,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF33595B),
+                              foregroundColor: const Color(0xFFFEFEFE),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Roboto',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 120),
                     ],
                   ),
-                  // spacer so the floating button doesn’t overlap
-                  const SizedBox(height: 110),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
 
-      Align(
-        alignment: Alignment.bottomCenter,
-        child: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _onContinue, // see below
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.teal,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Continue',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
+          // Bottom nav (shadow + safe area gap is handled inside component)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FFBottomNav(
+              currentIndex: _tab,
+              onTap: (i) => setState(() => _tab = i),
             ),
           ),
-        ),
-      ),
-      ],
-    ),
-      bottomNavigationBar: FFBottomNav(
-        currentIndex: _tab,
-        onTap: (i) {
-          setState(() => _tab = i);
-          // TODO: switch root tabs via your router
-        },
+        ],
       ),
     );
   }
@@ -283,94 +307,41 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
       MaterialPageRoute(builder: (_) => const StoreOrderScreen()),
     );
   }
-
-
-
-  Future<void> _showPermissionPrompt(BuildContext context) async {
-    // simple sheet matching the mock
-    return showDialog<void>(
-      context: context,
-      builder: (_) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Text('Allow access to files',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, size: 20),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'This will help you to find photos and videos faster by '
-                    'viewing your entire media gallery.',
-                style: TextStyle(height: 1.35),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Deny')),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.teal,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                    ),
-                    child: const Text('Allow'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-/// =================== Small widgets ===================
+/// ----------------------- FIGMA-STYLED PARTS -----------------------
 
-class _CardBlock extends StatelessWidget {
-  const _CardBlock({required this.title, required this.child, this.trailing});
+class _CardBlockFigma extends StatelessWidget {
+  const _CardBlockFigma({required this.title, required this.child});
+
   final String title;
   final Widget child;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.25)),
+          SizedBox(
+            width: 350,
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF212121),
+                fontSize: 16,
+                fontFamily: 'Roboto',
+                fontWeight: FontWeight.w500,
               ),
-              if (trailing != null) trailing!,
-            ],
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           child,
         ],
       ),
@@ -378,33 +349,13 @@ class _CardBlock extends StatelessWidget {
   }
 }
 
-class _YesNo extends StatelessWidget {
-  const _YesNo({required this.value, required this.onChanged});
-  final bool value;
-  final ValueChanged<bool> onChanged;
+class _RadioPillFigma extends StatelessWidget {
+  const _RadioPillFigma({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      children: [
-        _RadioPill(
-          label: 'Yes',
-          selected: value == true,
-          onTap: () => onChanged(true),
-        ),
-        _RadioPill(
-          label: 'No',
-          selected: value == false,
-          onTap: () => onChanged(false),
-        ),
-      ],
-    );
-  }
-}
-
-class _RadioPill extends StatelessWidget {
-  const _RadioPill({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -412,29 +363,50 @@ class _RadioPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(60),
       onTap: onTap,
       child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.teal.withOpacity(.1) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: selected ? AppColors.teal : AppColors.divider),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: ShapeDecoration(
+          color: const Color(0xFFF5F5F5),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(60)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              size: 18,
-              color: selected ? AppColors.teal : AppColors.subtext,
+            // custom radio
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: selected
+                        ? const Color(0xFF33595B)
+                        : const Color(0xFFB7BFC0),
+                    width: 2),
+              ),
+              alignment: Alignment.center,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF33595B) : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+              ),
             ),
-            const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    color: selected ? AppColors.teal : AppColors.subtext,
-                    fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF212121),
+                fontSize: 14,
+                fontFamily: 'Roboto',
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
       ),
@@ -442,117 +414,123 @@ class _RadioPill extends StatelessWidget {
   }
 }
 
-class _UploadRow extends StatelessWidget {
-  const _UploadRow({required this.onTap, required this.label, this.hasFiles = false});
-  final VoidCallback onTap;
+class _UploadBtnFigma extends StatelessWidget {
+  const _UploadBtnFigma({required this.label, required this.onTap});
   final String label;
-  final bool hasFiles;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 36,
+      height: 44,
       child: ElevatedButton.icon(
         onPressed: onTap,
-        icon: const Icon(Icons.add, size: 18),
-        label: Text(label),
+        icon: const Icon(Icons.upload_rounded, size: 18, color: Color(0xFFE9E9E9)),
+        label: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFFE9E9E9),
+            fontSize: 14,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: hasFiles ? AppColors.teal : const Color(0xFFE7EFEF),
-          foregroundColor: hasFiles ? Colors.white : AppColors.teal,
+          backgroundColor: const Color(0xFF33595B),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
   }
 }
+
+class _StoreBox extends StatelessWidget {
+  const _StoreBox({required this.label, this.dimmedBg = false});
+  final String label;
+  final bool dimmedBg;
+
+  String _assetFor(String name) {
+    switch (name.toLowerCase()) {
+      case 'walmart': return 'assets/images/walmart.png';
+      case 'kroger':  return 'assets/images/kroger.png';
+      case 'aldi':    return 'assets/images/aldi.png';
+      default:        return 'assets/images/store.png';
+    }
+  }
+
+  // Match logo proportions from the mock
+  Size _logoSize(String name) {
+    switch (name.toLowerCase()) {
+      case 'walmart': return const Size(24, 24);
+      case 'kroger':  return const Size(24, 13.5);
+      case 'aldi':    return const Size(20, 24);
+      default:        return const Size(24, 24);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = _assetFor(label);
+    final logoSize = _logoSize(label);
+
+    return SizedBox(
+      width: 116, // fixed card width per Figma
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 20),
+        decoration: ShapeDecoration(
+          color: dimmedBg ? const Color(0xFFD0DADC) : const Color(0xFFFEFEFE),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo (24-wide slot)
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Image.asset(
+                  asset,
+                  width: logoSize.width,
+                  height: logoSize.height,
+                  errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.store, size: 20, color: Color(0xFF33595B)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Brand name (fits in remaining width)
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: const TextStyle(
+                  color: Color(0xFF33595B),
+                  fontSize: 16,
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
 
 class _ReceiptFile {
   final String name;
   final int sizeKb;
   _ReceiptFile({required this.name, required this.sizeKb});
-}
-
-class _ReceiptTile extends StatelessWidget {
-  const _ReceiptTile({required this.file, required this.onRemove});
-  final _ReceiptFile file;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F7F8),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.picture_as_pdf_outlined, color: AppColors.subtext),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(file.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text('${file.sizeKb}KB',
-                    style: const TextStyle(color: AppColors.subtext, fontSize: 12)),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: onRemove,
-            icon: const Icon(Icons.close, size: 18, color: AppColors.subtext),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StorePill extends StatelessWidget {
-  const _StorePill({required this.label, required this.asset});
-  final String label;
-  final String asset;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              alignment: Alignment.center,
-              child: Image.asset(
-                asset,
-                width: 22,
-                height: 22,
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.store, size: 18, color: AppColors.teal),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
 }

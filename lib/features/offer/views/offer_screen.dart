@@ -39,24 +39,61 @@ class _OfferScreenState extends State<OfferScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
+        body: ColoredBox(
+            color: const Color(0xFFF4F6F6),
+            child: SafeArea(
+                bottom: false,
+                child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      child: CustomScrollView(
         slivers: [
-        SliverAppBar(
-        backgroundColor: AppColors.teal,
-        pinned: true,
-        expandedHeight: 122,
-        collapsedHeight: 88,
-        centerTitle: false,
-        flexibleSpace: FlexibleSpaceBar(
-          collapseMode: CollapseMode.pin,
-          // bottom padding for the collapsed title
-          titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          // ONE title that morphs between expanded/compact
-          title: const _CollapsingHeaderTitle(),
-          // no text here, only color (or image) so we don't double-draw
-          background: const ColoredBox(color: AppColors.teal),
-        ),
-      ),
+          SliverAppBar(
+            backgroundColor: const Color(0xFF33595B),
+            pinned: true,
+            expandedHeight: 92,       // header block height
+            collapsedHeight: 92,
+            titleSpacing: 0,          // so 24 actually is 24
+            title: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        // "Hi, Joshep" (from plugin: 18 regular + 18 bold)
+                        Text.rich(TextSpan(children: [
+                          TextSpan(text: 'Hi,',  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: Color(0xFFFEFEFE))),
+                          TextSpan(text: ' '),
+                          TextSpan(text: 'Joshep', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFFEFEFE))),
+                        ])),
+                        SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE9E9E9)),
+                            SizedBox(width: 8),
+                            Text('Savar, Dhaka', style: TextStyle(fontSize: 14, color: Color(0xFFE9E9E9))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 32, height: 32,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {},
+                      icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+
 
 
       // Walmart
@@ -102,7 +139,11 @@ class _OfferScreenState extends State<OfferScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
+                    ),
       // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
+    )
+            )
+        )
     );
   }
 }
@@ -190,29 +231,27 @@ class _StoreSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 0, 8),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            // logo (optional asset)
-            Image.asset(
-              logo,
-              width: 26,
-              height: 26,
-              errorBuilder: (_, __, ___) =>
-              const Icon(Icons.storefront, color: AppColors.teal, size: 22),
-            ),
-            const SizedBox(width: 8),
-            Text(title,
+          Row(
+            children: [
+              Image.asset(logo, width: 20, height: 20, fit: BoxFit.contain),
+              const SizedBox(width: 8),
+              Text(
+                title,
                 style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.text)),
-          ]),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF003032),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 250,
+            height: 221,
             child: ListView.separated(
               padding: const EdgeInsets.only(right: 16),
               scrollDirection: Axis.horizontal,
@@ -250,101 +289,117 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          width: 240,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 44, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // product image
-                Expanded(
-                  child: Center(
-                    child: Image.asset(
-                      p.image,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.image_outlined,
-                        size: 64,
-                        color: AppColors.subtext,
-                      ),
-                    ),
+    return Container(
+      width: 140,
+      height: 221,
+      // smaller card
+      padding: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9E9E9),           // light gray like mock
+        borderRadius: BorderRadius.circular(8),   // 8px radius
+      ),
+      child: Stack(
+        children: [
+          // SAVE % ribbon in the top-left corner
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              width: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: const ShapeDecoration(
+                color: Color(0xFF33595B),         // deep teal (matches screenshot)
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  p.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      height: 1.15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.text),
+              ),
+              child: Text(
+                p.save,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFFEFEFE),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
                 ),
-                const SizedBox(height: 8),
-                Row(
+              ),
+            ),
+          ),
+
+          // Card content
+          Column(
+            children: [
+              const SizedBox(height: 50),
+              SizedBox(
+                width: 100,
+                height: 76,
+                child: Image.asset(p.image, fit: BoxFit.contain),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(p.priceNow,
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.text)),
-                    const SizedBox(width: 10),
                     Text(
-                      p.priceOld,
+                      p.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppColors.subtext,
-                        decoration: TextDecoration.lineThrough,
-                        fontSize: 18,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF212121),
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          p.priceNow,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF212121),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          p.priceOld,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF6A6A6A),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
-
-        // “Save 20%” ribbon
-        Positioned(
-          left: 12,
-          top: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C6C66), // deep teal like mock
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              p.save,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _DividerGutter extends StatelessWidget {
   const _DividerGutter();
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      child: Divider(color: AppColors.divider.withOpacity(.7), height: 1),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: Divider(height: 1, thickness: 1, color: Color(0xFFE6EAEB)),
     );
   }
 }
+
+
+
+
 class _CollapsingHeaderTitle extends StatelessWidget {
   const _CollapsingHeaderTitle();
 
@@ -384,36 +439,34 @@ class _HeaderRow extends StatelessWidget {
                 'Hi, Joshep',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 20 : 22,
+                  fontSize: compact ? 20 : 24,     // +2 when expanded
                   fontWeight: FontWeight.w700,
+                  height: compact ? 1.15 : 1.20,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),           // +2 for breathing room
               const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.location_on_outlined,
-                      color: Colors.white70, size: 18),
-                  SizedBox(width: 6),
-                  Text('Savar, Dhaka',
-                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  Icon(Icons.location_on_outlined, color: Colors.white70, size: 18),
+                  SizedBox(width: 8),
+                  Text('Savar, Dhaka', style: TextStyle(color: Colors.white70, fontSize: 16)), // +2
                 ],
               ),
             ],
           ),
         ),
-        Stack(
-          children: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.notifications_none_rounded,
-                  color: Colors.white, size: 26),
-            ),
-            const Positioned(
-              right: 10, top: 10,
-              child: CircleAvatar(radius: 4, backgroundColor: Colors.red),
-            ),
-          ],
+        Padding(                               // align bell a bit lower
+          padding: const EdgeInsets.only(top: 4),
+          child: Stack(
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26),
+              ),
+              const Positioned(right: 10, top: 10, child: CircleAvatar(radius: 4, backgroundColor: Colors.red)),
+            ],
+          ),
         ),
       ],
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../ui/theme/app_theme.dart';
-import '../../../widgets/ff_bottom_nav.dart';
 import 'order_tracking_screen.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
@@ -12,10 +11,7 @@ class OrderDetailsScreen extends StatefulWidget {
 }
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
-  // set to your bottom-nav index (Order)
-  int _tab = 2;
-
-  // 🔌 API stub – replace with real call later
+  // (Details fetch stub)
   Future<void> _loadDetails() async {
     await Future<void>.delayed(const Duration(milliseconds: 1));
   }
@@ -29,171 +25,274 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      // page bg = #F4F6F6
+      backgroundColor: const Color(0xFFF4F6F6),
       body: CustomScrollView(
         slivers: [
+          /// ===== Figma header =====
           SliverAppBar(
+            automaticallyImplyLeading: false,
             pinned: true,
-            backgroundColor: AppColors.teal,
             elevation: 0,
-            collapsedHeight: 72,
+            backgroundColor: const Color(0xFF33595B), // app bar fill
+            collapsedHeight: 96, // 48 status + 48 toolbar visual
             titleSpacing: 0,
             title: Container(
-              color: AppColors.teal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              color: const Color(0xFF33595B),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: SafeArea(
                 bottom: false,
                 child: Row(
-                  children: const [
-                    BackButton(color: Colors.white),
-                    SizedBox(width: 4),
-                    Text('Order details',
-                        style: TextStyle(
-                          color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800,
-                        )),
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      onPressed: Get.back,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          color: Color(0xFFFEFEFE), size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Order details',
+                      style: TextStyle(
+                        color: Color(0xFFFEFEFE),
+                        fontSize: 20,
+                        fontFamily: 'Roboto',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Content
+          /// ===== Content =====
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Order id / date (two columns)
+                  /// ID + Date (left/right)
                   Row(
                     children: const [
                       Expanded(
-                        child: _LabeledValue(label: 'Order ID:', value: '#5677654'),
+                        child: _KV(label: 'Order ID:', value: '#5677654'),
                       ),
                       Expanded(
-                        child: _LabeledValue(
-                          label: 'Order date:',
-                          value: '25 Dec 2024',
-                          alignEnd: true,
-                        ),
+                        child:
+                        _KV(label: 'Order date:', value: '25 Dec 2024', alignEnd: true),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 24),
 
-                  // Store mini-card
+                  /// Store mini card
                   Container(
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      color: const Color(0xFFFEFEFE),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.bg,
-                            borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            padding: const EdgeInsets.all(11),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F6F6),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/brands/walmart.png',
+                              width: 24,
+                              height: 24,
+                              errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.storefront_rounded,
+                                  color: AppColors.teal),
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          child: Image.asset(
-                            'assets/brands/walmart.png',
-                            width: 24, height: 24,
-                            errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.storefront_rounded, color: AppColors.teal),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Walmart',
-                                  style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.text,
-                                  )),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF2CC),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: const Text('On the way',
+                          const SizedBox(width: 16),
+
+                          /// Brand + status pill
+                          Expanded(
+                            child: SizedBox(
+                              width: 152,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Walmart',
                                     style: TextStyle(
-                                      color: Color(0xFF9A7D1E), fontWeight: FontWeight.w700, fontSize: 12,
-                                    )),
+                                      color: Color(0xFF33595B),
+                                      fontSize: 16,
+                                      fontFamily: 'Roboto',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF1D7),
+                                      borderRadius: BorderRadius.circular(40),
+                                    ),
+                                    child: const Text(
+                                      'On the way',
+                                      style: TextStyle(
+                                        color: Color(0xFF956703),
+                                        fontSize: 12,
+                                        fontFamily: 'Roboto',
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          /// vertical divider (39px, #DEE0E0)
+                          Container(
+                            width: 1,
+                            height: 39,
+                            color: const Color(0xFFDEE0E0),
+                          ),
+                          const SizedBox(width: 16),
+
+                          /// price + items (right)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: const [
+                              _PriceNowOld(now: '\$400', old: '\$482'),
+                              SizedBox(height: 4),
+                              SizedBox(
+                                width: 77,
+                                child: Text(
+                                  '12 items',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    color: Color(0xFF4D4D4D),
+                                    fontSize: 14,
+                                    fontFamily: 'Roboto',
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        Container(width: 1, height: 38, color: AppColors.divider),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    'Order will be delivered at 4:45pm',
+                    style: TextStyle(
+                      color: Color(0xFF212121),
+                      fontSize: 14,
+                      fontFamily: 'Roboto',
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  /// Delivery address card
+                  _CardBlock(
+                    title: 'Delivery address',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _ThinDivider(),
+                        const SizedBox(height: 12),
+                        Row(
                           children: const [
-                            _PriceRow(current: '\$400', old: '\$482'),
-                            SizedBox(height: 6),
-                            Text('12 items', style: TextStyle(color: AppColors.subtext)),
+                            Icon(Icons.location_on_outlined,
+                                size: 20, color: Color(0xFF33595B)),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '1234 Maple Street, Springfield, IL 62704, USA',
+                                style: TextStyle(
+                                  color: Color(0xFF212121),
+                                  fontSize: 12,
+                                  fontFamily: 'Roboto',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  const Text('Order will be delivered at 4:45pm',
-                      style: TextStyle(color: AppColors.text, fontSize: 14)),
-                  const SizedBox(height: 16),
-
-                  // Address card
-                  _CardBlock(
-                    title: 'Delivery address',
-                    child: Row(
-                      children: const [
-                        Icon(Icons.location_on_outlined, color: AppColors.subtext),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '1234 Maple Street, Springfield, IL 62704, USA',
-                            style: TextStyle(color: AppColors.text, fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Order summary
-                  _CardBlock(
-                    title: 'Order summary',
-                    contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    child: Column(
-                      children: const [
-                        _SummaryRow(label: 'Order value', value: '+  \$189', positive: true),
-                        _SummaryRow(label: 'Redeemed from balance', value: '–  \$15', positive: false),
-                        _SummaryRow(label: 'Due today', value: '+  \$174', positive: true),
-                        Divider(height: 22),
-                        _SummaryRow(label: 'Total', value: '\$540', bold: true),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 24),
 
-                  // CTA
+                  /// Order summary card
+                  _CardBlock(
+                    title: 'Order summary',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        SizedBox(height: 4),
+                        _SummaryRow(
+                          label: 'Order value',
+                          value: '\$189',
+                          prefix: '+',
+                          valueColor: Color(0xFF33595B),
+                        ),
+                        SizedBox(height: 12),
+                        _SummaryRow(
+                          label: 'Redeemed from balance',
+                          value: '\$15',
+                          prefix: '—',
+                          valueColor: Color(0xFFBA4012),
+                        ),
+                        SizedBox(height: 12),
+                        _SummaryRow(
+                          label: 'Due today',
+                          value: '\$174',
+                          prefix: '+',
+                          valueColor: Color(0xFF33595B),
+                        ),
+                        SizedBox(height: 12),
+                        _ThinDivider(),
+                        SizedBox(height: 12),
+                        _TotalRow(label: 'Total', total: '\$540'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  /// CTA (rounded 100)
                   SizedBox(
-                    height: 56,
                     width: double.infinity,
+                    height: 56,
                     child: ElevatedButton(
                       onPressed: () => Get.to(() => const OrderTrackingScreen()),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.teal,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        backgroundColor: const Color(0xFF33595B),
+                        foregroundColor: const Color(0xFFFEFEFE),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
                       ),
-                      child: const Text('Track order',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      child: const Text(
+                        'Track order',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -202,73 +301,126 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: (i) => setState(() => _tab = i)),
+      // NOTE: Figma detail screen does not show the bottom nav, so we omit FFBottomNav here.
     );
   }
 }
 
-class _LabeledValue extends StatelessWidget {
-  const _LabeledValue({required this.label, required this.value, this.alignEnd = false});
+/// ===== Small atoms to match Figma text styles =====
+
+class _KV extends StatelessWidget {
+  const _KV({required this.label, required this.value, this.alignEnd = false});
   final String label;
   final String value;
   final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
+    final align =
+    alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: align,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.subtext, fontSize: 13)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF4D4D4D),
+            fontSize: 14,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(height: 6),
-        Text(value, style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w700)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF212121),
+            fontSize: 14,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _PriceRow extends StatelessWidget {
-  const _PriceRow({required this.current, required this.old});
-  final String current;
+class _PriceNowOld extends StatelessWidget {
+  const _PriceNowOld({required this.now, required this.old});
+  final String now;
   final String old;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(current,
-            style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.text, fontSize: 16)),
-        const SizedBox(width: 6),
-        Text(old,
-            style: const TextStyle(decoration: TextDecoration.lineThrough, color: AppColors.subtext)),
+        Text(
+          now,
+          style: const TextStyle(
+            color: Color(0xFF212121),
+            fontSize: 16,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          old,
+          style: const TextStyle(
+            color: Color(0xFF6A6A6A),
+            fontSize: 16,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w400,
+            decoration: TextDecoration.lineThrough,
+          ),
+        ),
       ],
     );
   }
 }
 
 class _CardBlock extends StatelessWidget {
-  const _CardBlock({required this.title, required this.child, this.contentPadding});
+  const _CardBlock({required this.title, required this.child});
   final String title;
   final Widget child;
-  final EdgeInsets? contentPadding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEFEFE),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF212121),
+              fontSize: 16,
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: contentPadding ?? const EdgeInsets.fromLTRB(14, 14, 14, 14),
-            child: child,
-          ),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
+    );
+  }
+}
+
+class _ThinDivider extends StatelessWidget {
+  const _ThinDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      color: const Color(0xFFE9E9E9),
+      width: double.infinity,
     );
   }
 }
@@ -277,33 +429,76 @@ class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.label,
     required this.value,
-    this.positive,
-    this.bold = false,
+    required this.prefix,
+    required this.valueColor,
   });
 
   final String label;
   final String value;
-  final bool? positive; // null for neutral (total)
-  final bool bold;
+  final String prefix; // '+' or '—'
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) {
-    Color valColor;
-    if (positive == null) {
-      valColor = AppColors.text;
-    } else {
-      valColor = positive! ? AppColors.text : AppColors.danger;
-    }
-    final fw = bold ? FontWeight.w800 : FontWeight.w600;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF6A6A6A),
+              fontSize: 14,
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        // small spacer for the icon slot shown in Figma
+        const SizedBox(width: 16),
+        Text(
+          '$prefix  $value',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 16,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: const TextStyle(color: AppColors.subtext))),
-          Text(value, style: TextStyle(color: valColor, fontWeight: fw)),
-        ],
-      ),
+class _TotalRow extends StatelessWidget {
+  const _TotalRow({required this.label, required this.total});
+  final String label;
+  final String total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF4D4D4D),
+            fontSize: 14,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          total,
+          style: const TextStyle(
+            color: Color(0xFF212121),
+            fontSize: 16,
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

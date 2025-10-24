@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/orders/views/past_order_details_screen.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
 import '../widgets/orders_widgets.dart';
-
+import 'order_details_screen.dart';
 
 class OrderScreen extends StatefulWidget {
   const OrderScreen({super.key});
@@ -19,7 +20,6 @@ class _OrderScreenState extends State<OrderScreen> {
   int _segIndex = 0; // 0 = Current, 1 = History
   String _historyRange = 'Last 3 months';
 
-  // 🔌 API hook – keep signatures and replace bodies later
   Future<void> _loadCurrent() async {
     await Future<void>.delayed(const Duration(milliseconds: 1));
     // TODO: call service for current orders
@@ -51,25 +51,28 @@ class _OrderScreenState extends State<OrderScreen> {
     setState(() => _tab = i);
     // TODO: route switch for other tabs if needed
   }
-
+  void _goToDetails() => Get.to(() => const OrderDetailsScreen());           // Current tab
+  void _goToPastDetails() => Get.to(() => const PastOrderDetailsScreen());   // 👈 NEW for History tab
   @override
   Widget build(BuildContext context) {
+    // Figma: Status bar ~48 + title block 69 => ~117
+    const double headerHeight = 117;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFFF4F6F6), // Figma bg
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             elevation: 0,
-            backgroundColor: AppColors.teal,
-            collapsedHeight: 72,
-            expandedHeight: 92,
+            backgroundColor: const Color(0xFF33595B), // Figma teal
+            collapsedHeight: headerHeight,
+            expandedHeight: headerHeight,
             titleSpacing: 0,
             title: TitleBar(
               showRange: _segIndex == 1,
               rangeText: _historyRange,
               onRangeTap: () async {
-                // simple pop menu (static for now)
                 final picked = await showMenu<String>(
                   context: context,
                   position: const RelativeRect.fromLTRB(200, 90, 16, 0),
@@ -87,10 +90,10 @@ class _OrderScreenState extends State<OrderScreen> {
             ),
           ),
 
-          // Segmented control
+          // Segmented control (top = 146 in figma; padding here yields same visual)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
               child: Row(
                 children: [
                   SegButton(
@@ -102,7 +105,6 @@ class _OrderScreenState extends State<OrderScreen> {
                   SegButton(
                     text: 'History',
                     selected: _segIndex == 1,
-                    filled: true,
                     onTap: () => _switchSeg(1),
                   ),
                 ],
@@ -112,74 +114,159 @@ class _OrderScreenState extends State<OrderScreen> {
 
           // Content
           if (_segIndex == 0)
-            SliverToBoxAdapter(child: CurrentList())
+          // 👇 tap anywhere on the card list (Current) to open details
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToDetails,
+                child: CurrentList(),
+              ),
+            )
           else
-            SliverList.list(children: const [
-              HistoryGroup(
-                dateLabel: '22 Sep 2024',
-                tiles: [
-                  OrderTileData(
-                    logo: 'assets/images/walmart.png',
-                    brand: 'Walmart',
-                    status: OrderStatus.completed,
-                    priceNow: '\$400',
-                    priceOld: '\$482',
-                    itemsText: '12 items',
-                  ),
-                ],
+            SliverList.list(children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,        // 👈 History → PastOrderDetailsScreen
+                child: const HistoryGroup(
+                  dateLabel: '22 Sep 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/walmart.png',
+                      brand: 'Walmart',
+                      status: OrderStatus.completed,
+                      priceNow: '\$400',
+                      priceOld: '\$482',
+                      itemsText: '12 items',
+                    ),
+                  ],
+                ),
               ),
-              HistoryGroup(
-                dateLabel: '16 Sep 2024',
-                tiles: [
-                  OrderTileData(
-                    logo: 'assets/images/kroger.png',
-                    brand: 'Kroger',
-                    status: OrderStatus.completed,
-                    priceNow: '\$700',
-                    priceOld: '\$759',
-                    itemsText: '15 items',
-                  ),
-                  OrderTileData(
-                    logo: 'assets/images/aldi.png',
-                    brand: 'Aldi',
-                    status: OrderStatus.cancelled,
-                    priceNow: '\$300',
-                    priceOld: '\$316',
-                    itemsText: '9 items',
-                  ),
-                ],
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: const HistoryGroup(
+                  dateLabel: '16 Sep 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/kroger.png',
+                      brand: 'Kroger',
+                      status: OrderStatus.completed,
+                      priceNow: '\$700',
+                      priceOld: '\$759',
+                      itemsText: '15 items',
+                    ),
+                    OrderTileData(
+                      logo: 'assets/images/aldi.png',
+                      brand: 'Aldi',
+                      status: OrderStatus.cancelled,
+                      priceNow: '\$300',
+                      priceOld: '\$316',
+                      itemsText: '9 items',
+                    ),
+                  ],
+                ),
               ),
-              HistoryGroup(
-                dateLabel: '06 Sep 2024',
-                tiles: [
-                  OrderTileData(
-                    logo: 'assets/images/aldi.png',
-                    brand: 'Aldi',
-                    status: OrderStatus.completed,
-                    priceNow: '\$300',
-                    priceOld: '\$316',
-                    itemsText: '9 items',
-                  ),
-                ],
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: const HistoryGroup(
+                  dateLabel: '06 Sep 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/aldi.png',
+                      brand: 'Aldi',
+                      status: OrderStatus.completed,
+                      priceNow: '\$300',
+                      priceOld: '\$316',
+                      itemsText: '9 items',
+                    ),
+                  ],
+                ),
               ),
-              HistoryGroup(
-                dateLabel: '27 Aug 2024',
-                tiles: [
-                  OrderTileData(
-                    logo: 'assets/images/walmart.png',
-                    brand: 'Walmart',
-                    status: OrderStatus.completed,
-                    priceNow: '\$400',
-                    priceOld: '\$482',
-                    itemsText: '12 items',
-                  ),
-                ],
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: const HistoryGroup(
+                  dateLabel: '27 Aug 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/walmart.png',
+                      brand: 'Walmart',
+                      status: OrderStatus.completed,
+                      priceNow: '\$400',
+                      priceOld: '\$482',
+                      itemsText: '12 items',
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
+
+              // (If you keep these duplicates, make them tappable too)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: HistoryGroup(
+                  dateLabel: '16 Sep 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/kroger.png',
+                      brand: 'Kroger',
+                      status: OrderStatus.completed,
+                      priceNow: '\$700',
+                      priceOld: '\$759',
+                      itemsText: '15 items',
+                    ),
+                    OrderTileData(
+                      logo: 'assets/images/aldi.png',
+                      brand: 'Aldi',
+                      status: OrderStatus.cancelled,
+                      priceNow: '\$300',
+                      priceOld: '\$316',
+                      itemsText: '9 items',
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: HistoryGroup(
+                  dateLabel: '06 Sep 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/aldi.png',
+                      brand: 'Aldi',
+                      status: OrderStatus.completed,
+                      priceNow: '\$300',
+                      priceOld: '\$316',
+                      itemsText: '9 items',
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _goToPastDetails,
+                child: HistoryGroup(
+                  dateLabel: '27 Aug 2024',
+                  tiles: [
+                    OrderTileData(
+                      logo: 'assets/images/walmart.png',
+                      brand: 'Walmart',
+                      status: OrderStatus.completed,
+                      priceNow: '\$400',
+                      priceOld: '\$482',
+                      itemsText: '12 items',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
             ]),
         ],
       ),
-      bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
+      // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
     );
   }
 }
