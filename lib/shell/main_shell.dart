@@ -4,35 +4,36 @@ import 'package:get/get.dart';
 import 'package:grocer_ai/features/help/views/help_support_screen.dart';
 import 'package:grocer_ai/features/orders/views/orders_screen.dart';
 import 'package:grocer_ai/features/profile/settings/settings_screen.dart';
-import '../features/offer/views/offer_screen.dart';
-import '../ui/theme/app_theme.dart';
-import '../widgets/ff_bottom_nav.dart';
+import 'package:grocer_ai/features/offer/views/offer_screen.dart';
+import 'package:grocer_ai/ui/theme/app_theme.dart';
+import 'package:grocer_ai/widgets/ff_bottom_nav.dart';
 import 'main_shell_controller.dart';
 
 // tab roots
-import '../features/home/dashboard_screen.dart';
+import 'package:grocer_ai/features/home/dashboard_screen.dart';
 
 class MainShell extends StatelessWidget {
   MainShell({super.key, int? initialIndex}) {
-    // If you navigate here with an initial index, set it.
+    // ensure the controller exists
+    final c = Get.put(MainShellController(), permanent: true);
+
+    // If you navigate here with an initial index, set it once.
     if (initialIndex != null) {
-      Get.put(MainShellController()).goTo(initialIndex);
+      c.goTo(initialIndex);
     }
   }
 
-  final _ctrl = Get.find<MainShellController>();
-
-  // optional: separate navigators per tab (so each tab keeps its own back stack)
-  final _keys = List.generate(5, (_) => GlobalKey<NavigatorState>());
+  final MainShellController _ctrl = Get.find<MainShellController>();
 
   @override
   Widget build(BuildContext context) {
+    // Root pages for each bottom tab index
     final pages = <Widget>[
-      const DashboardScreen(),
-      const OfferScreen(),
-      const OrderScreen(),
-      const HelpSupportScreen(),
-      const SettingsScreen(),
+      const DashboardScreen(),       // 0
+      const OfferScreen(),           // 1
+      const OrderScreen(),           // 2
+      const HelpSupportScreen(),     // 3
+      const SettingsScreen(),        // 4  (this is your Profile screen)
     ];
 
     return Obx(() {
@@ -40,17 +41,20 @@ class MainShell extends StatelessWidget {
 
       return WillPopScope(
         onWillPop: () async {
-          // handle back per-tab: pop tab stack first
-          final canPop = _keys[i].currentState?.canPop() ?? false;
+          // First try: pop the current tab's own navigator
+          final canPop = _ctrl.navKeys[i].currentState?.canPop() ?? false;
           if (canPop) {
-            _keys[i].currentState?.pop();
+            _ctrl.navKeys[i].currentState?.pop();
             return false;
           }
-          // if on non-home tab, go home instead of leaving app
+
+          // If we're not on the home tab (0), go home instead of exiting
           if (i != 0) {
             _ctrl.goTo(0);
             return false;
           }
+
+          // Otherwise allow system back to close the app
           return true;
         },
         child: Scaffold(
@@ -61,8 +65,9 @@ class MainShell extends StatelessWidget {
               return Offstage(
                 offstage: i != idx,
                 child: Navigator(
-                  key: _keys[idx],
+                  key: _ctrl.navKeys[idx],
                   onGenerateRoute: (settings) {
+                    // this is each tab’s "root" page
                     return MaterialPageRoute(
                       builder: (_) => pages[idx],
                       settings: settings,

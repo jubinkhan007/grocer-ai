@@ -6,6 +6,8 @@ import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
 import 'package:grocer_ai/features/auth/data/auth_repository.dart';
 
+import '../auth_controller.dart';
+
 class LoginController extends GetxController {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
@@ -57,6 +59,8 @@ class LoginController extends GetxController {
       loading.value = true;
       final tokens = await _repo.login(email: email, password: pass);
 
+      // Update the central AuthController state
+      Get.find<AuthController>().loginSuccess(tokens.accessToken, tokens.refreshToken);
       // Persist tokens again just to be safe
       await _box.write('auth_token', tokens.accessToken);
       await _box.write('refresh_token', tokens.refreshToken);

@@ -18,7 +18,7 @@ class PreferencesController extends GetxController {
   PreferenceItem? get frequency => _byTitleContains('frequency');
   PreferenceItem? get budget => _byTitleContains('Spending limit');
   PreferenceItem? get allergy => _byTitleContains('alerg');
-
+  PreferenceItem? get comfort   => _byTitleContains('comfort level');
   PreferenceItem? _byTitleContains(String q) => items.firstWhereOrNull(
     (e) => e.title.toLowerCase().contains(q.toLowerCase()),
   );
@@ -39,6 +39,9 @@ class PreferencesController extends GetxController {
   RxInt adultCount = 0.obs;
   RxInt kidCount = 0.obs;
   RxInt petCount = 0.obs;
+  // editing mode (false = view mode like left screenshot, true = edit mode like right screenshot)
+  final isEditing = false.obs;
+  final comfortLevel = 'Intermediate'.obs; // default shown in view mode
 
   // Getter for convenience (UI layer uses `controller.household`)
   PreferenceItem? get household => house;
@@ -202,6 +205,23 @@ class PreferencesController extends GetxController {
         ),
       );
     }
+  }
+
+  Future<void> submitComfortLevel() async {
+    final pref = comfort;
+    if (pref == null) return;
+
+    // The comfort level chips ("Beginner", "Intermediate", "Advanced")
+    // aren't currently wired to IDs in this controller.
+    // We store the chosen string in comfortLevel.value.
+    //
+    // We'll send that as free-form text via additionInfo.
+    await _safePost(
+      UserPrefPayload(
+        preference: pref.id,
+        additionInfo: comfortLevel.value,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------

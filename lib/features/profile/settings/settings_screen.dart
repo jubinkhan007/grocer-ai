@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/ff_app_bar.dart';
 import '../../../ui/widgets/section_card.dart';
 import '../../../ui/widgets/setting_row.dart';
 import '../../preferences/preferences_binding.dart';
-import '../../preferences/views/preferences_screen.dart';
+import '../preferences/views/preferences_screen.dart';
 import '../reviews/reviews_screen.dart';
 import '../invite/invite_screen.dart';
 import '../security/views/security_screen.dart';
@@ -64,11 +65,17 @@ class SettingsScreen extends StatelessWidget {
             SectionCard(
               child: Column(
                 children: [
-                  SettingRow(title: 'Wallet', onTap: () => Get.toNamed('/wallet')),
+                  SettingRow(title: 'Wallet', onTap: () => Get.toNamed('/profile/wallet')),
                   const Divider(height: 1),
-                  SettingRow(title: 'Transactions', onTap: () => Get.toNamed('/transactions')),
+                  SettingRow(
+                    title: 'Transactions',
+                    onTap: () {
+                      final shell = Get.find<MainShellController>();
+                      shell.openTransactions();
+                    },
+                  ),
                   const Divider(height: 1),
-                  SettingRow(title: 'Live chat', onTap: () => Get.toNamed('/livechat')),
+                  SettingRow(title: 'Live chat', onTap: () => Get.toNamed('/profile/livechat')),
                 ],
               ),
             ),
@@ -85,7 +92,8 @@ class SettingsScreen extends StatelessWidget {
                   SettingRow(
                     title: 'Preferences',
                     onTap: () {
-                      Get.to(() => const PreferencesScreen(), binding: PreferencesBinding());
+                      final shell = Get.find<MainShellController>();
+                      shell.openPreferences();
                     },
                   ),
 

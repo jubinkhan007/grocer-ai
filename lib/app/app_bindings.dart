@@ -26,7 +26,7 @@ class AppBindings extends Bindings {
       await GetStorage.init();
       return GetStorage();
     }, permanent: true);
-
+    Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     // Core clients/repos
     Get.put<DioClient>(DioClient(), permanent: true);
     Get.put<AuthRepository>(AuthRepository(Get.find<DioClient>()), permanent: true);
@@ -81,7 +81,7 @@ class AppBindings extends Bindings {
           () => SecurityController(Get.find<SecurityService>()),
       fenix: true,
     );
-    Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
+
 
 
 

@@ -12,6 +12,7 @@ import 'package:grocer_ai/features/preferences/views/prefs_diet_view.dart';
 import 'package:grocer_ai/features/preferences/views/prefs_frequency_view.dart';
 import 'package:grocer_ai/features/preferences/views/prefs_grocers_view.dart';
 import 'package:grocer_ai/features/preferences/views/prefs_household_view.dart';
+import 'package:grocer_ai/features/profile/wallet/wallet_screen.dart';
 import 'package:grocer_ai/features/splash/splash_view.dart';
 import 'package:grocer_ai/features/onboarding/onboarding_binding.dart';
 import 'package:grocer_ai/features/onboarding/onboarding_view.dart';
@@ -27,7 +28,9 @@ import 'package:grocer_ai/features/auth/signup_view.dart';
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
 import '../features/orders/views/orders_screen.dart';
+import '../features/profile/security/views/security_screen.dart';
 import '../features/profile/settings/settings_screen.dart';
+import '../features/profile/transactions/transactions_screen.dart';
 import '../shell/main_shell.dart';
 import '../shell/main_shell_controller.dart';
 
@@ -57,6 +60,10 @@ abstract class Routes {
   static const offer = '/offer';
   static const order = '/order';
   static const help = '/help';
+  static const wallet = '/profile/wallet';
+  static const transactions = '/profile/transactions';
+  static const livechat = '/profile/livechat';
+  static const security = '/profile/security';
 }
 
 class AppPages {
@@ -146,5 +153,20 @@ class AppPages {
     GetPage(name: Routes.order,     page: () => const OrderScreen()),
     GetPage(name: Routes.help,     page: () => const HelpSupportScreen()),
     GetPage(name: Routes.profile,  page: () => const SettingsScreen()),
+    GetPage(
+      name: Routes.wallet,
+      page: () => WalletScreen(),
+      //binding: HomeBinding(),
+    ),
+    GetPage(
+      name: Routes.transactions,
+      page: () => TransactionsScreen(),
+      //binding: HomeBinding(),
+    ),
+    GetPage(
+      name: Routes.security,
+      page: () => SecurityScreen(),
+      //binding: HomeBinding(),
+    ),
   ];
 }
