@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../models/personal_info_model.dart';
 import '../services/profile_service.dart';
@@ -12,11 +13,19 @@ class ProfileController extends GetxController {
   Future<void> loadPersonalInfo() async {
     try {
       isLoading.value = true;
-      personalInfo.value = await _service.fetchPersonalInfo();
+      final info = await _service.fetchPersonalInfo();
+      if (info != null) {
+        personalInfo.value = info;
+      }
+    } catch (e) {
+      // Don’t crash the sheet.
+      // Optional: you can log or store a fallback error state here.
+      debugPrint('loadPersonalInfo() failed: $e');
     } finally {
       isLoading.value = false;
     }
   }
+
 
   Future<void> updatePersonalInfo(PersonalInfo updated, {bool partial = false}) async {
     try {

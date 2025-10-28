@@ -54,7 +54,9 @@ class PreferencesScreen extends StatelessWidget {
             // Top chrome: dark status bar strip + teal header bar
             _PreferencesHeader(
               isEditing: isEditing,
-              onBack: Get.back,
+              onBack: () {
+                Get.back(); // <- this will Navigator.pop() the current route/sheet
+              },
               onTapEdit: () {
                 if (!c.isEditing.value) {
                   c.isEditing.value = true;

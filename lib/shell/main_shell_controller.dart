@@ -7,6 +7,8 @@ import '../core/theme/network/dio_client.dart';
 import '../features/preferences/preferences_controller.dart';
 import '../features/preferences/preferences_repository.dart';
 import '../features/profile/preferences/views/preferences_screen.dart';
+import '../features/profile/views/my_referral_screen.dart';
+import '../features/profile/views/referral_summary_screen.dart';
 
 class MainShellController extends GetxController {
   /// which bottom tab is active
@@ -46,6 +48,16 @@ class MainShellController extends GetxController {
     );
   }
 
+  void openReferral() {
+    goTo(4);
+
+    navKeys[4].currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => const ReferralSummaryScreen(),
+      ),
+    );
+  }
+
   // --- NEW: open PreferencesScreen in the same tab stack ---
   void openPreferences() {
     // 1. Switch to the Profile tab (index 4 in your MainShell)
@@ -70,6 +82,18 @@ class MainShellController extends GetxController {
     navKeys[4].currentState?.push(
       MaterialPageRoute(
         builder: (_) => const PreferencesScreen(),
+      ),
+    );
+  }
+
+  void openMyReferralList() {
+    // 1. jump to Profile tab (index 4 in your shell)
+    goTo(4);
+
+    // 2. push MyReferralScreen onto THAT tab's own navigator stack
+    navKeys[4].currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => const MyReferralScreen(),
       ),
     );
   }
