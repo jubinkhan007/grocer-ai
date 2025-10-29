@@ -1,7 +1,9 @@
 // lib/features/order/store_order_screen.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:grocer_ai/features/orders/views/store_add_item_screen.dart';
 import '../../../ui/theme/app_theme.dart';
+import '../../checkout/views/checkout_screen.dart';
 import '../widgets/related_items_sheet.dart';
 import 'compare_grocers_screen.dart';
 
@@ -202,10 +204,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                         MaterialPageRoute(builder: (_) => const CompareGrocersScreen()),
                       );
                     } else {
-                      // from compare -> “Checkout” (placeholder action for now)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Proceeding to checkout…')),
-                      );
+                      Get.to(() => const CheckoutScreen());
                     }
                   },
                   child: Container(

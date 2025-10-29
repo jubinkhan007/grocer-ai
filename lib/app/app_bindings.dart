@@ -17,6 +17,7 @@ import '../features/profile/services/partner_service.dart';
 import '../features/profile/services/profile_service.dart';
 import '../features/profile/controllers/profile_controller.dart';
 import '../features/profile/services/referral_service.dart';
+import '../shell/main_shell_controller.dart';
 
 class AppBindings extends Bindings {
   @override
@@ -26,6 +27,7 @@ class AppBindings extends Bindings {
       await GetStorage.init();
       return GetStorage();
     }, permanent: true);
+    Get.lazyPut<MainShellController>(() => MainShellController());
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     // Core clients/repos
     Get.put<DioClient>(DioClient(), permanent: true);

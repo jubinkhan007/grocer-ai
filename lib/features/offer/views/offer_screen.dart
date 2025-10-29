@@ -1,8 +1,16 @@
+// lib/features/offer/views/offer_screen.dart
+
+import 'package:dio/dio.dart'; // Import dio
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
+
+// Import new models and service
+import '../data/product_model.dart';
+import '../data/provider_model.dart';
+import '../services/offer_service.dart';
 
 class OfferScreen extends StatefulWidget {
   const OfferScreen({super.key});
@@ -12,20 +20,41 @@ class OfferScreen extends StatefulWidget {
 }
 
 class _OfferScreenState extends State<OfferScreen> {
-  // set this to the index that represents "Offer" in your nav
-  // (change to whatever your FFBottomNav index is for Offer)
-  int _tab = 1;
+  int _tab = 1; // (change to whatever your FFBottomNav index is for Offer)
 
-  // 🔌 API hook – keep this signature; wire service later
-  Future<void> _loadOffers() async {
-    await Future<void>.delayed(const Duration(milliseconds: 1));
-    // TODO: call OfferService.fetch() and setState with results
-  }
+  // 🔌 Service and state variables
+  late final OfferService _offerService;
+  bool _isLoading = true;
+  List<ProviderWithProducts> _offerData = [];
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    // Initialize the service with a Dio instance
+    _offerService = OfferService(Dio());
     _loadOffers();
+  }
+
+  // 🔌 API hook
+  Future<void> _loadOffers() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final data = await _offerService.getOffers();
+      setState(() {
+        _offerData = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = "Failed to load offers. Please try again.";
+        _isLoading = false;
+        print(e); // For debugging
+      });
+    }
   }
 
   void _onNavTap(int i) {
@@ -33,122 +62,164 @@ class _OfferScreenState extends State<OfferScreen> {
     Get.find<MainShellController>().goTo(i);
   }
 
+  // Helper to map API Product to UI _P model
+  _P _mapProductToP(Product product) {
+    final priceOldNum = double.tryParse(product.price) ?? 0.0;
+    final discount = product.discount;
+    final priceNowNum = priceOldNum - (priceOldNum * discount / 100);
 
+    return _P(
+      title: product.name,
+      // Format prices to match your original UI
+      priceNow: '\$${priceNowNum.toStringAsFixed(priceNowNum.truncateToDouble() == priceNowNum ? 0 : 2)}',
+      priceOld: '\$${priceOldNum.toStringAsFixed(priceOldNum.truncateToDouble() == priceOldNum ? 0 : 2)}',
+      save: 'Save $discount%',
+      image: product.image, // This is now a URL
+    );
+  }
+
+  // Helper to dynamically build the store sections
+  List<Widget> _buildStoreSections() {
+    final List<Widget> sections = [];
+
+    if (_offerData.isEmpty && !_isLoading) {
+      sections.add(const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: Center(child: Text("No offers available right now.")),
+        ),
+      ));
+      return sections;
+    }
+
+    for (int i = 0; i < _offerData.length; i++) {
+      final item = _offerData[i];
+      final productsAsP = item.products.map((p) => _mapProductToP(p)).toList();
+
+      sections.add(SliverToBoxAdapter(
+        child: _StoreSection(
+          logo: item.provider.logo, // This is now a URL
+          title: item.provider.name,
+          products: productsAsP,
+        ),
+      ));
+
+      // Add divider if not the last item
+      if (i < _offerData.length - 1) {
+        sections.add(const SliverToBoxAdapter(child: _DividerGutter()));
+      }
+    }
+
+    // Add final padding
+    sections.add(const SliverToBoxAdapter(child: SizedBox(height: 24)));
+    return sections;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-        body: ColoredBox(
-            color: const Color(0xFFF4F6F6),
-            child: SafeArea(
-                bottom: false,
-                child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 430),
-                      child: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: const Color(0xFF33595B),
-            pinned: true,
-            expandedHeight: 92,       // header block height
-            collapsedHeight: 92,
-            titleSpacing: 0,          // so 24 actually is 24
-            title: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        // "Hi, Joshep" (from plugin: 18 regular + 18 bold)
-                        Text.rich(TextSpan(children: [
-                          TextSpan(text: 'Hi,',  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: Color(0xFFFEFEFE))),
-                          TextSpan(text: ' '),
-                          TextSpan(text: 'Joshep', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFFEFEFE))),
-                        ])),
-                        SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE9E9E9)),
-                            SizedBox(width: 8),
-                            Text('Savar, Dhaka', style: TextStyle(fontSize: 14, color: Color(0xFFE9E9E9))),
-                          ],
+      body: ColoredBox(
+          color: const Color(0xFFF4F6F6),
+          child: SafeArea(
+              bottom: false,
+              child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverAppBar(
+                          backgroundColor: const Color(0xFF33595B),
+                          pinned: true,
+                          expandedHeight: 92, // header block height
+                          collapsedHeight: 92,
+                          titleSpacing: 0, // so 24 actually is 24
+                          title: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      // "Hi, Joshep" (from plugin: 18 regular + 18 bold)
+                                      Text.rich(TextSpan(children: [
+                                        TextSpan(
+                                            text: 'Hi,',
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w400,
+                                                color: Color(0xFFFEFEFE))),
+                                        TextSpan(text: ' '),
+                                        TextSpan(
+                                            text: 'Joshep',
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFFFEFEFE))),
+                                      ])),
+                                      SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.location_on_outlined,
+                                              size: 20,
+                                              color: Color(0xFFE9E9E9)),
+                                          SizedBox(width: 8),
+                                          Text('Savar, Dhaka',
+                                              style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Color(0xFFE9E9E9))),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () {},
+                                    icon: const Icon(
+                                        Icons.notifications_none_rounded,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+
+                        // Handle Loading and Error states
+                        if (_isLoading)
+                          const SliverFillRemaining(
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_error != null)
+                          SliverFillRemaining(
+                            child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Text(_error!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: Colors.red)),
+                                )),
+                          )
+                        else
+                        // Dynamically build store sections
+                          ..._buildStoreSections(),
                       ],
                     ),
-                  ),
-                  SizedBox(
-                    width: 32, height: 32,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () {},
-                      icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-
-
-
-      // Walmart
-          SliverToBoxAdapter(
-            child: _StoreSection(
-              logo: 'assets/images/walmart.png', // optional asset
-              title: 'Walmart',
-              products: const [
-                _P(title: 'Bell Pepper Red', priceNow: '\$11', priceOld: '\$14', save: 'Save 20%', image: 'assets/products/red_pepper.png'),
-                _P(title: 'Arabic Ginger', priceNow: '\$19', priceOld: '\$21', save: 'Save 19%', image: 'assets/products/ginger.png'),
-                _P(title: 'Fresh Lettuce', priceNow: '\$14', priceOld: '\$20', save: 'Save 18%', image: 'assets/products/lettuce.png'),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: _DividerGutter()),
-
-          // Kroger
-          SliverToBoxAdapter(
-            child: _StoreSection(
-              logo: 'assets/images/kroger.png',
-              title: 'Kroger',
-              products: const [
-                _P(title: 'Butternut Squash', priceNow: '\$17', priceOld: '\$24', save: 'Save 20%', image: 'assets/products/squash.png'),
-                _P(title: 'Organic Carrots', priceNow: '\$16', priceOld: '\$23', save: 'Save 10%', image: 'assets/products/carrots.png'),
-                _P(title: 'Broccoli', priceNow: '\$18', priceOld: '\$19', save: 'Save 12%', image: 'assets/products/broccoli.png'),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: _DividerGutter()),
-
-          // Aldi
-          SliverToBoxAdapter(
-            child: _StoreSection(
-              logo: 'assets/images/aldi.png',
-              title: 'Aldi',
-              products: const [
-                _P(title: 'Fresh Beef', priceNow: '\$22', priceOld: '\$28', save: 'Save 22%', image: 'assets/products/beef.png'),
-                _P(title: 'Tomatoes', priceNow: '\$12', priceOld: '\$16', save: 'Save 25%', image: 'assets/products/tomatoes.png'),
-                _P(title: 'Spinach', priceNow: '\$9', priceOld: '\$11', save: 'Save 15%', image: 'assets/products/spinach.png'),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
-      ),
-                    ),
+                  )))),
       // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
-    )
-            )
-        )
     );
   }
 }
 
 /// Header: teal, “Hi, Joshep” + location + bell
+/// This widget is no longer used by SliverAppBar, but kept for reference
 class _OfferHeader extends StatelessWidget {
   const _OfferHeader();
 
@@ -224,7 +295,7 @@ class _StoreSection extends StatelessWidget {
     required this.products,
   });
 
-  final String logo;
+  final String logo; // This is now a URL
   final String title;
   final List<_P> products;
 
@@ -237,7 +308,24 @@ class _StoreSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Image.asset(logo, width: 20, height: 20, fit: BoxFit.contain),
+              // *** MODIFIED HERE: Use Image.network for the logo ***
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Image.network(
+                  logo,
+                  fit: BoxFit.contain,
+                  // Add error/loading builders for robustness
+                  loadingBuilder: (context, child, progress) {
+                    return progress == null
+                        ? child
+                        : const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.store, size: 20, color: Colors.grey);
+                  },
+                ),
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -272,7 +360,7 @@ class _P {
   final String priceNow;
   final String priceOld;
   final String save;
-  final String image;
+  final String image; // This is now a URL
   const _P({
     required this.title,
     required this.priceNow,
@@ -295,8 +383,8 @@ class _ProductCard extends StatelessWidget {
       // smaller card
       padding: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),           // light gray like mock
-        borderRadius: BorderRadius.circular(8),   // 8px radius
+        color: const Color(0xFFE9E9E9), // light gray like mock
+        borderRadius: BorderRadius.circular(8), // 8px radius
       ),
       child: Stack(
         children: [
@@ -308,7 +396,7 @@ class _ProductCard extends StatelessWidget {
               width: 64,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: const ShapeDecoration(
-                color: Color(0xFF33595B),         // deep teal (matches screenshot)
+                color: Color(0xFF33595B), // deep teal (matches screenshot)
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(8),
@@ -335,7 +423,21 @@ class _ProductCard extends StatelessWidget {
               SizedBox(
                 width: 100,
                 height: 76,
-                child: Image.asset(p.image, fit: BoxFit.contain),
+                // *** MODIFIED HERE: Use Image.network for the product image ***
+                child: Image.network(
+                  p.image,
+                  fit: BoxFit.contain,
+                  // Add error/loading builders for robustness
+                  loadingBuilder: (context, child, progress) {
+                    return progress == null
+                        ? child
+                        : const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image_not_supported,
+                        color: Colors.grey);
+                  },
+                ),
               ),
               const SizedBox(height: 16),
               Padding(
@@ -397,8 +499,7 @@ class _DividerGutter extends StatelessWidget {
   }
 }
 
-
-
+// ... (Rest of your helper widgets _CollapsingHeaderTitle and _HeaderRow remain unchanged) ...
 
 class _CollapsingHeaderTitle extends StatelessWidget {
   const _CollapsingHeaderTitle();
@@ -421,7 +522,6 @@ class _CollapsingHeaderTitle extends StatelessWidget {
   }
 }
 
-
 class _HeaderRow extends StatelessWidget {
   const _HeaderRow({required this.compact});
   final bool compact;
@@ -439,32 +539,39 @@ class _HeaderRow extends StatelessWidget {
                 'Hi, Joshep',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 20 : 24,     // +2 when expanded
+                  fontSize: compact ? 20 : 24, // +2 when expanded
                   fontWeight: FontWeight.w700,
                   height: compact ? 1.15 : 1.20,
                 ),
               ),
-              const SizedBox(height: 8),           // +2 for breathing room
+              const SizedBox(height: 8), // +2 for breathing room
               const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.location_on_outlined, color: Colors.white70, size: 18),
+                  Icon(Icons.location_on_outlined,
+                      color: Colors.white70, size: 18),
                   SizedBox(width: 8),
-                  Text('Savar, Dhaka', style: TextStyle(color: Colors.white70, fontSize: 16)), // +2
+                  Text('Savar, Dhaka',
+                      style: TextStyle(color: Colors.white70, fontSize: 16)), // +2
                 ],
               ),
             ],
           ),
         ),
-        Padding(                               // align bell a bit lower
+        Padding(
+          // align bell a bit lower
           padding: const EdgeInsets.only(top: 4),
           child: Stack(
             children: [
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26),
+                icon: const Icon(Icons.notifications_none_rounded,
+                    color: Colors.white, size: 26),
               ),
-              const Positioned(right: 10, top: 10, child: CircleAvatar(radius: 4, backgroundColor: Colors.red)),
+              const Positioned(
+                  right: 10,
+                  top: 10,
+                  child: CircleAvatar(radius: 4, backgroundColor: Colors.red)),
             ],
           ),
         ),

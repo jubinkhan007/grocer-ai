@@ -113,32 +113,32 @@ class AppPages {
 
     GetPage(
       name: Routes.prefsGrocers,
-      page: () => const PrefsGrocersView(),
+      page: () => const NearbyGrocersScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(
       name: Routes.prefsHouse,
-      page: () => const PrefsHouseholdView(),
+      page: () => const HouseholdScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(
       name: Routes.prefsDiet,
-      page: () => const PrefsDietView(),
+      page: () => const DietaryPreferenceScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(
       name: Routes.prefsCuisine,
-      page: () => const PrefsCuisineView(),
+      page: () => const CuisinePreferenceScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(
       name: Routes.prefsFreq,
-      page: () => const PrefsFrequencyView(),
+      page: () => const ShoppingFrequencyScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(
       name: Routes.prefsBudget,
-      page: () => const PrefsBudgetView(),
+      page: () => const SpendingLimitScreen(),
       binding: PreferencesBinding(),
     ),
     GetPage(

@@ -55,7 +55,7 @@ class PreferencesScreen extends StatelessWidget {
             _PreferencesHeader(
               isEditing: isEditing,
               onBack: () {
-                Get.back(); // <- this will Navigator.pop() the current route/sheet
+                Navigator.of(context).pop(); // <- use the local Navigator
               },
               onTapEdit: () {
                 if (!c.isEditing.value) {
@@ -63,6 +63,7 @@ class PreferencesScreen extends StatelessWidget {
                 }
               },
             ),
+
 
             // Scrollable body
             Expanded(
