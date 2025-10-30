@@ -13,7 +13,10 @@
 	<!-- Required to request 'When In Use' location permission -->
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>We need your location to connect you with nearby grocery stores and improve recommendations.</string>
-
+<key>NSPhotoLibraryUsageDescription</key>
+<string>We need access to your photo library to attach receipts.</string>
+<key>NSDocumentsFolderUsageDescription</key>
+<string>We need access to your files to attach receipts.</string>
 <!-- Optional: if you ever ask for Always permission -->
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>We use your location to provide accurate, location-based services.</string>

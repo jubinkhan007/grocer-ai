@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
-import '../../../ui/theme/app_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:grocer_ai/features/orders/controllers/compare_grocers_controller.dart';
+import 'package:grocer_ai/features/orders/models/compare_bid_model.dart';
+// Note: store_order_screen.dart is imported by the controller
 
 /// Palette taken from the Figma export
 const _statusBar = Color(0xFF002C2E);
@@ -15,15 +16,9 @@ const _muted = Color(0xFF6A6A6A);
 const _dot = Color(0xFF8AA0A1);
 const _divider = Color(0xFFDEE0E0);
 
-class CompareGrocersScreen extends StatefulWidget {
+// --- MODIFIED: Converted to GetView ---
+class CompareGrocersScreen extends GetView<CompareGrocersController> {
   const CompareGrocersScreen({super.key});
-
-  @override
-  State<CompareGrocersScreen> createState() => _CompareGrocersScreenState();
-}
-
-class _CompareGrocersScreenState extends State<CompareGrocersScreen> {
-  bool _live = false; // false = Comparison Summary, true = Live Bid Status
 
   @override
   Widget build(BuildContext context) {
@@ -31,155 +26,62 @@ class _CompareGrocersScreenState extends State<CompareGrocersScreen> {
       backgroundColor: const Color(0xFFF4F6F6),
       body: Column(
         children: [
-          // Fake status bar color strip (matches Figma's very dark green)
-          _TopHeader(
-            live: _live,
-            onTapAction: () => setState(() => _live = !_live),
-          ),
+          // --- MODIFIED: Header now observes controller state ---
+          Obx(() => _TopHeader(
+            live: controller.isLive.value,
+            isRebidding: controller.isRebidding.value,
+            timeText: controller.formattedTime,
+            onTapAction: () {
+              if (controller.isLive.value) {
+                controller.toggleLiveView(); // Switch back to summary
+              } else {
+                controller.handleRebid(); // Perform rebid
+              }
+            },
+          )),
 
           // CONTENT
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 19, 24, 24),
-              children: [
-                if (!_live) ..._summaryTiles(context) else ..._liveTiles(context),
-              ],
-            ),
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (controller.bids.isEmpty) {
+                return const Center(child: Text('No bids found.'));
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(24, 19, 24, 120),
+                itemCount: controller.bids.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final bid = controller.bids[index];
+                  // --- MODIFIED: Build tiles dynamically ---
+                  return _BidTile(
+                    logo: Image.asset(
+                      bid.provider.localLogoAsset, // Use local asset helper
+                      errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.store, color: _teal),
+                    ),
+                    name: bid.provider.name,
+                    date: '2025-10-30', // Mock data, API doesn't provide this
+                    time: '6:30pm', // Mock data, API doesn't provide this
+                    now: '\$${bid.discountedPrice}',
+                    old: '\$${bid.totalPrice}',
+                    items: '${bid.totalItems} items',
+                    onTap: () => controller.selectStore(bid),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),
     );
   }
-
-  // --------------------- DATA (exact order/values from the Figma) ---------------------
-
-  List<Widget> _summaryTiles(BuildContext context) =>
-      [
-        _BidTile(
-          logo: Image.asset('assets/images/walmart.png'),
-          name: 'Walmart',
-          date: '25 Dec 2024',
-          time: '6:30pm',
-          now: '\$210',
-          old: '\$250',
-          items: '15 items',
-          onTap: () => _openStore(context, 'Walmart'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/kroger.png'),
-          name: 'Kroger',
-          date: '14 Mar 2025',
-          time: '3:45pm',
-          now: '\$350',
-          old: '\$345',
-          items: '22 items',
-          onTap: () => _openStore(context, 'Kroger'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/aldi.png'),
-          name: 'Aldi',
-          date: '7 Aug 2023',
-          time: '11:15am',
-          now: '\$320',
-          old: '\$360',
-          items: '19 items',
-          onTap: () => _openStore(context, 'Aldi'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/fred_meyer.png'),
-          name: 'Fred Myers',
-          date: '7 Aug 2023',
-          time: '9:45am',
-          now: '\$350',
-          old: '\$380',
-          items: '14 items',
-          onTap: () => _openStore(context, 'Fred Myers'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/united_supermarkets.png'),
-          name: 'United Supermarkets',
-          date: '7 Aug 2023',
-          time: '2:30pm',
-          now: '\$400',
-          old: '\$420',
-          items: '12 items',
-          onTap: () => _openStore(context, 'United Supermarkets'),
-        ),
-      ];
-
-  List<Widget> _liveTiles(BuildContext context) =>
-      [
-        _BidTile(
-          logo: Image.asset('assets/images/kroger.png'),
-          name: 'Kroger',
-          date: '14 Mar 2025',
-          time: '3:45pm',
-          now: '\$210',
-          old: '\$250',
-          items: '11 items',
-          onTap: () => _openStore(context, 'Kroger'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/united_supermarkets.png'),
-          name: 'United Supermarkets',
-          date: '7 Aug 2023',
-          time: '11:15am',
-          now: '\$350',
-          old: '\$345',
-          items: '20 items',
-          onTap: () => _openStore(context, 'United Supermarkets'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/aldi.png'),
-          name: 'Aldi',
-          date: '7 Aug 2023',
-          time: '5:55pm',
-          now: '\$320',
-          old: '\$360',
-          items: '15 items',
-          onTap: () => _openStore(context, 'Aldi'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/walmart.png'),
-          name: 'Walmart',
-          date: '25 Dec 2024',
-          time: '6:30pm',
-          now: '\$350',
-          old: '\$380',
-          items: '18 items',
-          onTap: () => _openStore(context, 'Walmart'),
-        ),
-        const SizedBox(height: 12),
-        _BidTile(
-          logo: Image.asset('assets/images/fred_meyer.png'),
-          name: 'Fred Myers',
-          date: '7 Aug 2023',
-          time: '7:35am',
-          now: '\$400',
-          old: '\$420',
-          items: '17 items',
-          onTap: () => _openStore(context, 'Fred Myers'),
-        ),
-      ];
-
-  void _openStore(BuildContext context, String name) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => StoreOrderScreen(
-          storeName: name,
-          fromCompare: true, // ⬅️ this makes the CTA read “Checkout”
-        ),
-      ),
-    );
-  }
 }
+
 /// A single white card from the mock with exact paddings, type, dividers, etc.
 class _BidTile extends StatelessWidget {
   const _BidTile({
@@ -367,37 +269,18 @@ class _Dot extends StatelessWidget {
   }
 }
 
-/// Gray logo box with a placeholder image size matching Figma exports
-class _LogoBox extends StatelessWidget {
-  const _LogoBox._(this.w, this.h);
-  final double w;
-  final double h;
-
-  static Widget mock({double width = 24, double height = 24}) =>
-      _LogoBox._(width, height);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: w,
-      height: h,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
+// --- MODIFIED: Header now shows loading state ---
 class _TopHeader extends StatelessWidget {
-  const _TopHeader({required this.live, required this.onTapAction});
+  const _TopHeader({
+    required this.live,
+    required this.onTapAction,
+    required this.isRebidding,
+    required this.timeText,
+  });
   final bool live;
+  final bool isRebidding;
   final VoidCallback onTapAction;
+  final String timeText;
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +295,10 @@ class _TopHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // status bar strip (48.14 in Figma; 48 is fine)
-        const SizedBox(height: 48, width: double.infinity, child: ColoredBox(color: _statusBar)),
+        SizedBox(
+            height: MediaQuery.of(context).padding.top,
+            width: double.infinity,
+            child: const ColoredBox(color: _statusBar)),
         // toolbar (68 = 116 - 48)
         Container(
           height: 68,
@@ -426,9 +312,10 @@ class _TopHeader extends StatelessWidget {
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 splashRadius: 22,
-                icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
+                icon: const Icon(Icons.chevron_left,
+                    color: Colors.white, size: 28),
               ),
               const SizedBox(width: 0),
               // title (truncates to keep chip visible)
@@ -445,36 +332,50 @@ class _TopHeader extends StatelessWidget {
                 ),
               ),
               // action chip: Rebid (with refresh icon) OR timer
-              TextButton(
-                onPressed: onTapAction,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: _teal, // same as bar (Figma)
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!live) ...[
-                      const Icon(Icons.refresh, size: 16, color: Colors.white),
-                      const SizedBox(width: 4),
-                      const Text('Rebid',
-                          style: TextStyle(
-                            color: Color(0xFFFEFEFE),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          )),
-                    ] else ...[
-                      const Text('1:25',
-                          style: TextStyle(
-                            color: Color(0xFFFEFEFE),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          )),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: TextButton(
+                  onPressed: isRebidding ? null : onTapAction,
+                  style: TextButton.styleFrom(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: _teal, // same as bar (Figma)
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
+                  ),
+                  child: isRebidding
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child:
+                    CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                      : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!live) ...[
+                        const Icon(Icons.refresh,
+                            size: 16, color: Colors.white),
+                        const SizedBox(width: 4),
+                        const Text('Rebid',
+                            style: TextStyle(
+                              color: Color(0xFFFEFEFE),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ] else ...[
+                        // TODO: Implement live timer
+                        Text(timeText,
+                            style: const TextStyle(
+                              color: Color(0xFFFEFEFE),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],

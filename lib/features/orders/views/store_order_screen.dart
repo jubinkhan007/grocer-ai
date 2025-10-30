@@ -1,49 +1,26 @@
-// lib/features/order/store_order_screen.dart
+// lib/features/orders/views/store_order_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:grocer_ai/features/orders/views/store_add_item_screen.dart';
+import 'package:grocer_ai/features/orders/controllers/store_order_controller.dart';
+import 'package:grocer_ai/features/orders/models/generated_order_model.dart';
 import '../../../ui/theme/app_theme.dart';
-import '../../checkout/views/checkout_screen.dart';
 import '../widgets/related_items_sheet.dart';
-import 'compare_grocers_screen.dart';
 
-class StoreOrderScreen extends StatefulWidget {
+// --- MODIFIED: Changed to GetView<StoreOrderController> ---
+class StoreOrderScreen extends GetView<StoreOrderController> {
   const StoreOrderScreen({
     super.key,
-    this.storeName = 'Walmart',
-    this.currentTotal = '\$400',
-    this.oldTotal = '\$482',
-    this.fromCompare = false,
+    // These properties are now managed by the controller
+    // this.storeName = 'Walmart',
+    // this.currentTotal = '\$400',
+    // this.oldTotal = '\$482',
+    // this.fromCompare = false,
   });
-
-  final String storeName;
-  final String currentTotal;
-  final String oldTotal;
-  final bool fromCompare;
-
-  @override
-  State<StoreOrderScreen> createState() => _StoreOrderScreenState();
-}
-
-
-
-class _StoreOrderScreenState extends State<StoreOrderScreen> {
-  final items = <_OrderItem>[
-    _OrderItem('Royal Basmati Rice', '\$8.75/kg', '\$26.25', emoji: '🍚', qty: 3),
-    _OrderItem('Sunny Valley Olive Oil', '\$75.30/litter', '\$23.8', emoji: '🫙', qty: 3),
-    _OrderItem('Golden Harvest Quinoa', '\$4.29/kg', '\$42.7', emoji: '🧺', qty: 3),
-    _OrderItem('Maple Grove Honey', '\$12.50/kg', '\$34.7', emoji: '🍯', qty: 3),
-    _OrderItem('Emerald Isle Sea Salt', '\$5.50/kg', '\$28.3', emoji: '🧂', qty: 3),
-    _OrderItem('Crisp Apple Juice', '\$3.49/litter', '\$31.4', emoji: '🧃', qty: 3),
-    _OrderItem('Mountain Coffee Beans', '\$12.99/kg', '\$19.6', emoji: '☕️', qty: 3),
-    _OrderItem('Silver Lake Almond Milk', '\$3.50 unit', '\$19.6', emoji: '🥛', qty: 3),
-    _OrderItem('Sunrise Organic Oats', '\$5.50 unit', '\$34.5', emoji: '🥣', qty: 3),
-  ];
-
-  final _scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
+    // Scroll controller is now local to the build method
+    final _scrollController = ScrollController();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
@@ -57,7 +34,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // HEADER
+                // --- MODIFIED: HEADER ---
                 SliverAppBar(
                   automaticallyImplyLeading: false,
                   pinned: true,
@@ -73,24 +50,37 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                       child: Row(
                         children: [
                           const SizedBox(width: 8),
-                          const Icon(Icons.arrow_back_ios, color: Colors.white),
-                          Image.asset('assets/images/walmart.png', width: 24, height: 24),
+                          // Use Get.back() for navigation
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                            onPressed: () => Get.back(),
+                          ),
+                          // Dynamic Logo
+                          Obx(() {
+                            final logoUrl = controller.provider.value?.logo;
+                            if (logoUrl == null || logoUrl.isEmpty) {
+                              return Image.asset('assets/images/walmart.png', width: 24, height: 24); // Fallback
+                            }
+                            return Image.network(
+                              logoUrl,
+                              width: 24,
+                              height: 24,
+                              errorBuilder: (_, __, ___) => Image.asset('assets/images/walmart.png', width: 24, height: 24),
+                            );
+                          }),
                           const SizedBox(width: 8),
-                          Text(
-                            widget.storeName,
+                          // Dynamic Title
+                          Obx(() => Text(
+                            controller.provider.value?.name ?? 'Store Order',
                             style: const TextStyle(
                               color: Color(0xFFFEFEFE),
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                             ),
-                          ),
+                          )),
                           const Spacer(),
                           TextButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const StoreAddItemScreen()),
-                              );
-                            },
+                            onPressed: controller.onAddItem, // Use controller
                             icon: const Icon(Icons.add, color: Colors.white, size: 20),
                             label: const Text(
                               'Add item',
@@ -113,11 +103,11 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                   ),
                 ),
 
-                // ORDER HEADER
+                // --- MODIFIED: ORDER HEADER ---
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                    child: Row(
+                    child: Obx(() => Row(
                       children: [
                         const Text(
                           'Order',
@@ -135,7 +125,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(
-                            '${items.length}',
+                            '${controller.products.length}', // Dynamic count
                             style: const TextStyle(
                               color: Color(0xFFFEFEFE),
                               fontSize: 14,
@@ -144,51 +134,47 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                           ),
                         ),
                         const Spacer(),
-                        _totalPill(widget.currentTotal, widget.oldTotal),
+                        _totalPill(
+                          controller.provider.value?.discountedPrice ?? '\$0',
+                          controller.provider.value?.totalPrice ?? '\$0',
+                        ),
                       ],
-                    ),
+                    )),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                // LIST (now swipe-to-delete)
-                SliverList.separated(
-                  itemCount: items.length,
+                // --- MODIFIED: DYNAMIC LIST ---
+                Obx(() => SliverList.separated(
+                  itemCount: controller.products.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, i) {
-                    final item = items[i];
+                    final item = controller.products[i];
                     return Dismissible(
-                      key: ValueKey('${item.title}-$i'),
-                      direction: DismissDirection.endToStart, // swipe left
-                      confirmDismiss: (_) async =>
-                      await _showDeleteDialog(context) ?? false,
-                      onDismissed: (_) => setState(() => items.removeAt(i)),
-                      // trailing pink strip with delete icon, rounded only on the right
+                      key: ValueKey(item.id),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: controller.onDismissConfirm,
+                      onDismissed: (_) => controller.onItemDismissed(item),
                       background: const _SwipeDeleteBackground(),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: _OrderRow(
                           item: item,
-                          onMinus: () => setState(() {
-                            if (items[i].qty > 0) {
-                              items[i] = items[i].copyWith(qty: items[i].qty - 1);
-                            }
-                          }),
-                          onPlus: () => setState(() {
-                            items[i] = items[i].copyWith(qty: items[i].qty + 1);
-                          }),
+                          onMinus: () => controller.onQtyMinus(item),
+                          onPlus: () => controller.onQtyPlus(item),
+                          onTap: () => controller.onItemTap(item),
                         ),
                       ),
                     );
                   },
-                ),
+                )),
 
                 const SliverToBoxAdapter(child: SizedBox(height: 120)),
               ],
             ),
           ),
 
-          // CTA
+          // --- MODIFIED: CTA ---
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
@@ -197,16 +183,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(100),
-                  onTap: () {
-                    if (!widget.fromCompare) {
-                      // original behavior
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CompareGrocersScreen()),
-                      );
-                    } else {
-                      Get.to(() => const CheckoutScreen());
-                    }
-                  },
+                  onTap: controller.onCompareOrCheckout, // Use controller
                   child: Container(
                     height: 56,
                     alignment: Alignment.center,
@@ -221,14 +198,15 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
                         ),
                       ],
                     ),
-                    child: Text(
-                      widget.fromCompare ? 'Checkout' : 'Compare Grocers', // ⬅️ NEW
+                    // Dynamic button text
+                    child: Obx(() => Text(
+                      controller.fromCompare.value ? 'Checkout' : 'Compare Grocers',
                       style: const TextStyle(
                         color: Color(0xFFFEFEFE),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
-                    ),
+                    )),
                   ),
                 ),
               ),
@@ -239,7 +217,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
     );
   }
 
-  // $400 $482 pill
+  // $400 $482 pill (unchanged)
   Widget _totalPill(String now, String old) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -250,7 +228,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
       child: Row(
         children: [
           Text(
-            now,
+            now, // Assumes $ is included from API
             style: const TextStyle(
               color: Color(0xFF33595B),
               fontSize: 16,
@@ -259,7 +237,7 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
           ),
           const SizedBox(width: 4),
           Text(
-            old,
+            old, // Assumes $ is included from API
             style: const TextStyle(
               color: Color(0xFF33595B),
               fontSize: 16,
@@ -273,87 +251,25 @@ class _StoreOrderScreenState extends State<StoreOrderScreen> {
   }
 }
 
-class _OrderItem {
-  final String title;
-  final String unit;
-  final String price;
-  final String? emoji;
-  final int qty;
-  _OrderItem(this.title, this.unit, this.price, {this.emoji, this.qty = 1});
-  _OrderItem copyWith({int? qty}) =>
-      _OrderItem(title, unit, price, emoji: emoji, qty: qty ?? this.qty);
-}
-
-// ---------- SWIPE BACKGROUND ----------
-class _SwipeDeleteBackground extends StatelessWidget {
-  const _SwipeDeleteBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    // mirror card padding so the pink strip hugs the card
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24),
-      child: _SwipeBgInner(),
-    );
-  }
-}
-
-class _SwipeBgInner extends StatelessWidget {
-  const _SwipeBgInner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: SizedBox()), // keep left clear
-        ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(8),
-            bottomRight: Radius.circular(8),
-          ),
-          child: Container(
-            width: 76,
-            color: Color(0xFFFFEEF0), // soft pink like the mock
-            alignment: Alignment.center,
-            child: const Icon(Icons.delete_outline, color: Color(0xFFEB5A5A), size: 28),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------- ROW (unchanged) ----------
+// --- MODIFIED: _OrderRow now takes ProductData ---
 class _OrderRow extends StatelessWidget {
   const _OrderRow({
     required this.item,
     required this.onMinus,
     required this.onPlus,
+    required this.onTap,
   });
 
-  final _OrderItem item;
+  final ProductData item;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        // show the pixel-perfect bottom sheet
-        showRelatedItemsBottomSheet(
-          context,
-          items: const [
-            RelatedItem('Mediterranean Breeze Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Verdant Valley Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Golden Fields Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Maple Leaf Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Emerald Coast Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Mountain Peak Olive Oil', '\$75.30/litter', '\$23.8'),
-            RelatedItem('Blue Ridge Olive Oil', '\$75.30/litter', '\$23.8'),
-          ],
-        );
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -363,7 +279,7 @@ class _OrderRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // emoji tile
+            // --- MODIFIED: DYNAMIC IMAGE ---
             Container(
               width: 64,
               height: 64,
@@ -372,7 +288,19 @@ class _OrderRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               alignment: Alignment.center,
-              child: Text(item.emoji ?? '🛒', style: const TextStyle(fontSize: 28)),
+              child: Image.network(
+                item.image,
+                fit: BoxFit.cover,
+                errorBuilder: (_,__,___) => const Text('🛒', style: TextStyle(fontSize: 28)),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+              ),
             ),
             const SizedBox(width: 16),
 
@@ -382,7 +310,7 @@ class _OrderRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.title,
+                    item.name, // Dynamic
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -394,7 +322,7 @@ class _OrderRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    item.unit,
+                    item.pricePerUnit, // Dynamic
                     style: const TextStyle(
                       color: Color(0xFF6A6A6A),
                       fontSize: 14,
@@ -404,7 +332,7 @@ class _OrderRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    item.price,
+                    '\$${item.price}', // Dynamic (assuming price is just number)
                     style: const TextStyle(
                       color: Color(0xFF4D4D4D),
                       fontSize: 14,
@@ -417,7 +345,8 @@ class _OrderRow extends StatelessWidget {
             ),
 
             const SizedBox(width: 12),
-            _QtyPill(value: item.qty, onMinus: onMinus, onPlus: onPlus),
+            // --- MODIFIED: DYNAMIC QTY ---
+            Obx(() => _QtyPill(value: item.uiQuantity.value, onMinus: onMinus, onPlus: onPlus)),
           ],
         ),
       ),
@@ -425,6 +354,45 @@ class _OrderRow extends StatelessWidget {
   }
 }
 
+
+// (All other widgets: _SwipeDeleteBackground, _QtyPill, _GlyphButton, _GlyphPainter, _showDeleteDialog remain unchanged)
+
+// --- UNCHANGED WIDGETS ---
+
+class _SwipeDeleteBackground extends StatelessWidget {
+  const _SwipeDeleteBackground();
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: _SwipeBgInner(),
+    );
+  }
+}
+
+class _SwipeBgInner extends StatelessWidget {
+  const _SwipeBgInner();
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: SizedBox()),
+        ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(8),
+            bottomRight: Radius.circular(8),
+          ),
+          child: Container(
+            width: 76,
+            color: const Color(0xFFFFEEF0),
+            alignment: Alignment.center,
+            child: const Icon(Icons.delete_outline, color: Color(0xFFEB5A5A), size: 28),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _QtyPill extends StatelessWidget {
   const _QtyPill({
@@ -523,67 +491,4 @@ class _GlyphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GlyphPainter oldDelegate) => oldDelegate.minus != minus;
-}
-
-// ---------- Delete confirmation (matches your design) ----------
-Future<bool?> _showDeleteDialog(BuildContext context) {
-  const teal = Color(0xFF33595B);
-  return showDialog<bool>(
-    context: context,
-    builder: (_) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              //decoration: const BoxDecoration(color: Color(0x1F33595B), shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: Image.asset('assets/icons/delete.png', height: 50, width: 50,),
-            ),
-            const SizedBox(height: 16),
-            const Text('Delete item',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.text)),
-            const SizedBox(height: 8),
-            const Text('Are you sure you want to delete this item?',
-                textAlign: TextAlign.center, style: TextStyle(color: AppColors.subtext)),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: teal, width: 2),
-                      foregroundColor: teal,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Cancel',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: teal,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Delete',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

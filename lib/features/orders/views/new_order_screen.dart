@@ -1,31 +1,23 @@
+// lib/features/orders/views/new_order_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/orders/controllers/new_order_controller.dart';
+import 'package:grocer_ai/features/orders/models/order_preference_model.dart';
 import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
+import 'package:grocer_ai/shell/main_shell_controller.dart';
 
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
 
-class NewOrderScreen extends StatefulWidget {
+class NewOrderScreen extends GetView<NewOrderController> {
   const NewOrderScreen({super.key});
 
   @override
-  State<NewOrderScreen> createState() => _NewOrderScreenState();
-}
-
-class _NewOrderScreenState extends State<NewOrderScreen> {
-  int _tab = 2;
-
-  // Defaults chosen to match the Figma screenshots
-  bool outsidePurchase = true;   // Yes
-  bool awayFromHome = false;     // No
-  bool guestsThisCycle = false;  // No
-
-  final TextEditingController _note =
-  TextEditingController(text: 'Yes, I do have.');
-  final List<_ReceiptFile> _receipts = [];
-
-  @override
   Widget build(BuildContext context) {
+    // Get the shell controller to manage the bottom nav state
+    final shellController = Get.find<MainShellController>();
+
     // Figma page background
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
@@ -33,13 +25,13 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
         children: [
           CustomScrollView(
             slivers: [
-              // Header bar exactly like Figma (teal, 24px side padding, 20px vertical)
+              // Header bar exactly like Figma (unchanged)
               SliverAppBar(
                 automaticallyImplyLeading: false,
                 pinned: true,
                 elevation: 0,
                 backgroundColor: const Color(0xFF33595B),
-                collapsedHeight: 88, // ~ SafeArea top + 20 padding + content height
+                collapsedHeight: 88,
                 toolbarHeight: 88,
                 titleSpacing: 0,
                 title: Container(
@@ -63,7 +55,7 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                           ),
                         ),
                         const Spacer(),
-                        // notification pill 32x32 with bell (matches Figma touch target)
+                        // notification pill (unchanged)
                         Container(
                           width: 32,
                           height: 32,
@@ -101,215 +93,225 @@ class _NewOrderScreenState extends State<NewOrderScreen> {
                 ),
               ),
 
-              // Content column at x=24, width=382 as in Figma
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding:
-                  const EdgeInsets.fromLTRB(24, 24 /* top = 135 in figma minus header*/, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Card 1: Outside purchase
-                      _CardBlockFigma(
-                        title:
-                        'Any outside purchase to report since your last order with GrocerAI?',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _RadioPillFigma(
-                                  label: 'Yes',
-                                  selected: outsidePurchase,
-                                  onTap: () =>
-                                      setState(() => outsidePurchase = true),
-                                ),
-                                _RadioPillFigma(
-                                  label: 'No',
-                                  selected: !outsidePurchase,
-                                  onTap: () =>
-                                      setState(() => outsidePurchase = false),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            _UploadBtnFigma(
-                              label: 'Upload receipt',
-                              onTap: () => setState(() {
-                                _receipts.add(_ReceiptFile(
-                                    name: 'receipt_${_receipts.length + 1}.pdf',
-                                    sizeKb: 420));
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+              // --- MODIFIED: DYNAMIC CONTENT ---
+              Obx(() {
+                if (controller.isLoading.value) {
+                  return const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-                      // Card 2: Away from home
-                      _CardBlockFigma(
-                        title:
-                        'Are you planning to be out of home for days?',
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _RadioPillFigma(
-                              label: 'Yes',
-                              selected: awayFromHome,
-                              onTap: () =>
-                                  setState(() => awayFromHome = true),
-                            ),
-                            _RadioPillFigma(
-                              label: 'No',
-                              selected: !awayFromHome,
-                              onTap: () =>
-                                  setState(() => awayFromHome = false),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- Build dynamic cards from API ---
+                        ...controller.preferences
+                            .map((pref) => _buildPreferenceCard(pref))
+                            .toList(),
+                        // --- End of dynamic cards ---
 
-                      // Card 3: Guests
-                      _CardBlockFigma(
-                        title:
-                        'Are you expecting guests this order cycle?',
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _RadioPillFigma(
-                              label: 'Yes',
-                              selected: guestsThisCycle,
-                              onTap: () =>
-                                  setState(() => guestsThisCycle = true),
-                            ),
-                            _RadioPillFigma(
-                              label: 'No',
-                              selected: !guestsThisCycle,
-                              onTap: () =>
-                                  setState(() => guestsThisCycle = false),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Extra info block (static text to match screenshot)
-                      Text(
-                        'Do you have any additional information to share?',
-                        style: const TextStyle(
-                          color: Color(0xFF212121),
-                          fontSize: 16,
-                          fontFamily: 'Roboto',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        height: 140,
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEFEFE),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        alignment: Alignment.topLeft,
-                        child: Text(
-                          _note.text,
-                          style: const TextStyle(
+                        // Participating stores header (static, unchanged)
+                        const Text(
+                          'Please click on the participating grocery store for the\n'
+                              'grocerAI-generated order list',
+                          style: TextStyle(
                             color: Color(0xFF212121),
-                            fontSize: 14,
+                            fontSize: 16,
                             fontFamily: 'Roboto',
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                      // Participating stores header
-                      Text(
-                        'Please click on the participating grocery store for the\n'
-                            'grocerAI-generated order list',
-                        style: const TextStyle(
-                          color: Color(0xFF212121),
-                          fontSize: 16,
-                          fontFamily: 'Roboto',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Three 116px-wide store pills with 25px spacing (as in Figma)
-                      Row(
-                        children: const [
-                          Expanded(child: _StoreBox(label: 'Walmart', dimmedBg: true)),
-                          SizedBox(width: 12), // visual spacing similar to figma
-                          Expanded(child: _StoreBox(label: 'Kroger')),
-                          SizedBox(width: 12),
-                          Expanded(child: _StoreBox(label: 'Aldi')),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Continue button (382x56, radius 100)
-                      Center(
-                        child: SizedBox(
-                          width: 382,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _onContinue,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF33595B),
-                              foregroundColor: const Color(0xFFFEFEFE),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100),
+                        // Store boxes (static, unchanged)
+                        Obx(() {
+                          final sel = controller.selectedStore.value;
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _StoreBox(
+                                  label: 'Walmart',
+                                  selected: sel == 'Walmart',
+                                  onTap: () => controller.selectStore('Walmart'),
+                                ),
                               ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Continue',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: 'Roboto',
-                                fontWeight: FontWeight.w600,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StoreBox(
+                                  label: 'Kroger',
+                                  selected: sel == 'Kroger',
+                                  onTap: () => controller.selectStore('Kroger'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StoreBox(
+                                  label: 'Aldi',
+                                  selected: sel == 'Aldi',
+                                  onTap: () => controller.selectStore('Aldi'),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                        const SizedBox(height: 24),
+
+                        // Continue button (wired to controller)
+                        Center(
+                          child: SizedBox(
+                            width: 382,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: controller.onContinue, // <-- Wired up
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF33595B),
+                                foregroundColor: const Color(0xFFFEFEFE),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Roboto',
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 120),
-                    ],
+                        const SizedBox(height: 120),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ],
           ),
 
-          // Bottom nav (shadow + safe area gap is handled inside component)
+          // --- MODIFIED: Bottom nav now uses ShellController ---
           Align(
             alignment: Alignment.bottomCenter,
-            child: FFBottomNav(
-              currentIndex: _tab,
-              onTap: (i) => setState(() => _tab = i),
-            ),
+                      child: Obx(() => FFBottomNav(
+                  currentIndex: shellController.current.value,
+                  onTap: (i) {
+                   // 1) switch the tab in the shell controller
+                    shellController.goTo(i);
+
+                    // 2) reveal the shell by popping this overlay page
+                    //    (works whether you used Navigator or Get to push)
+                    final root = Navigator.of(context, rootNavigator: true);
+                    if (root.canPop()) {
+                      root.popUntil((route) {
+                        // If your MainShell has a named route, prefer that:
+                        // return route.settings.name == MainShell.routeName;
+                        return route.isFirst; // shell is the root
+                      });
+                    }
+                  },
+                )),
           ),
         ],
       ),
     );
   }
 
-  void _onContinue() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const StoreOrderScreen()),
-    );
+  /// --- NEW: Helper to build dynamic cards ---
+  Widget _buildPreferenceCard(OrderPreferenceItem pref) {
+    // --- 'single' choice (Yes/No) ---
+    if (pref.preferenceType == 'single') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: _CardBlockFigma(
+          title: pref.title,
+          child: Obx(() {
+            final selectedOptionId = controller.answers[pref.id];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: pref.options.map((opt) {
+                    return _RadioPillFigma(
+                      label: opt.label.capitalizeFirst ?? opt.label,
+                      selected: selectedOptionId == opt.id,
+                      onTap: () => controller.selectOption(pref.id, opt.id),
+                    );
+                  }).toList(),
+                ),
+                // Show upload button if this pref triggers it
+                if (controller.shouldShowUpload(pref)) ...[
+                  const SizedBox(height: 16),
+                  _UploadBtnFigma(
+                    label: 'Upload receipt',
+                    onTap: () => controller.uploadReceipt(pref.id, selectedOptionId: controller.answers[pref.id] as int?),
+                  ),
+                ],
+              ],
+            );
+          }),
+        ),
+      );
+    }
+
+    // --- 'text' input ---
+    if (pref.preferenceType == 'text') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              pref.title,
+              style: const TextStyle(
+                color: Color(0xFF212121),
+                fontSize: 16,
+                fontFamily: 'Roboto',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 140,
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEFEFE),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.topLeft,
+              child: TextField(
+                controller: controller.getTextController(pref),
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText:
+                  pref.helpText ?? 'Share any additional info here...',
+                ),
+                style: const TextStyle(
+                  color: Color(0xFF212121),
+                  fontSize: 14,
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink(); // Fallback for unknown types
   }
 }
 
-/// ----------------------- FIGMA-STYLED PARTS -----------------------
+/// ----------------------- FIGMA-STYLED PARTS (Unchanged) -----------------------
 
 class _CardBlockFigma extends StatelessWidget {
   const _CardBlockFigma({required this.title, required this.child});
@@ -392,7 +394,8 @@ class _RadioPillFigma extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF33595B) : Colors.transparent,
+                  color:
+                  selected ? const Color(0xFF33595B) : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -425,7 +428,8 @@ class _UploadBtnFigma extends StatelessWidget {
       height: 44,
       child: ElevatedButton.icon(
         onPressed: onTap,
-        icon: const Icon(Icons.upload_rounded, size: 18, color: Color(0xFFE9E9E9)),
+        icon: const Icon(Icons.upload_rounded,
+            size: 18, color: Color(0xFFE9E9E9)),
         label: Text(
           label,
           style: const TextStyle(
@@ -448,9 +452,15 @@ class _UploadBtnFigma extends StatelessWidget {
 }
 
 class _StoreBox extends StatelessWidget {
-  const _StoreBox({required this.label, this.dimmedBg = false});
+  const _StoreBox({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
   final String label;
-  final bool dimmedBg;
+  final bool selected;
+  final VoidCallback onTap;
 
   String _assetFor(String name) {
     switch (name.toLowerCase()) {
@@ -461,7 +471,6 @@ class _StoreBox extends StatelessWidget {
     }
   }
 
-  // Match logo proportions from the mock
   Size _logoSize(String name) {
     switch (name.toLowerCase()) {
       case 'walmart': return const Size(24, 24);
@@ -476,50 +485,54 @@ class _StoreBox extends StatelessWidget {
     final asset = _assetFor(label);
     final logoSize = _logoSize(label);
 
-    return SizedBox(
-      width: 116, // fixed card width per Figma
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 20),
-        decoration: ShapeDecoration(
-          color: dimmedBg ? const Color(0xFFD0DADC) : const Color(0xFFFEFEFE),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Logo (24-wide slot)
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: Image.asset(
-                  asset,
-                  width: logoSize.width,
-                  height: logoSize.height,
-                  errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.store, size: 20, color: Color(0xFF33595B)),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
+    final Color bg = selected ? const Color(0xFFFEFEFE) : const Color(0xFFD0DADC);
+    final BorderSide side = selected
+        ? const BorderSide(color: Color(0xFF33595B), width: 2)
+        : BorderSide.none;
 
-            // Brand name (fits in remaining width)
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.fade,
-                style: const TextStyle(
-                  color: Color(0xFF33595B),
-                  fontSize: 16,
-                  fontFamily: 'Roboto',
-                  fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: 116,
+      child: Material(
+        color: bg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: side, // <-- fixed
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(4),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24, height: 24,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Image.asset(
+                      asset,
+                      width: logoSize.width, height: logoSize.height,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.store, size: 20, color: Color(0xFF33595B),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1, softWrap: false, overflow: TextOverflow.fade,
+                    style: const TextStyle(
+                      color: Color(0xFF33595B),
+                      fontSize: 16, fontFamily: 'Roboto', fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -527,10 +540,9 @@ class _StoreBox extends StatelessWidget {
 }
 
 
-
-
-class _ReceiptFile {
-  final String name;
-  final int sizeKb;
-  _ReceiptFile({required this.name, required this.sizeKb});
-}
+// (This class is no longer needed as state is in the controller)
+// class _ReceiptFile {
+//   final String name;
+//   final int sizeKb;
+//   _ReceiptFile({required this.name, required this.sizeKb});
+// }

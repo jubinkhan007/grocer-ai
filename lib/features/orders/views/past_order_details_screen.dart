@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
 import '../../../ui/theme/app_theme.dart';
+import '../bindings/new_order_binding.dart';
 import 'new_order_screen.dart';
 
 class PastOrderDetailsScreen extends StatefulWidget {
@@ -245,7 +246,7 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
             child: ElevatedButton(
               onPressed: () {
                 // GetX (your project already uses Get)
-                Get.to(() => const NewOrderScreen());
+                Get.to(() => const NewOrderScreen(), binding: NewOrderBinding());
 
                 // If you prefer Navigator instead, use this and remove the Get line:
                 // Navigator.of(context).push(

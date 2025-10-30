@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' hide Response;
+import 'package:get/get.dart' hide Response, FormData;
 import 'package:get_storage/get_storage.dart';
 import 'api_endpoints.dart';
 import 'error_mapper.dart';
@@ -72,6 +72,13 @@ class DioClient {
 
   Future<Response<T>> deleteJson<T>(String path, {Map<String, dynamic>? query}) {
     return dio.delete<T>(path, queryParameters: query);
+  }
+  Future<Response<dynamic>> postMultipart(String path, FormData formData) {
+    return dio.post(
+      path,
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
   }
 }
 

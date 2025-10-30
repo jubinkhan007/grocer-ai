@@ -38,4 +38,11 @@ class ApiPath {
   // --- NEW ORDER PREFERENCES ---
   static const String orderPreferenceList = '/api/v1/order-preference-list/';
   static const String orderPreferences = '/api/v1/order-preferences/';
+
+  // media upload
+  static const String mediaUpload = '/api/v1/media/';
+
+  // --- NEW: COMPARE/BID ---
+  static const String compareGrocery = '/api/v1/compare-grocery/'; // GET
+  static const String bidGrocery = '/api/v1/bid-grocery/'; // GET (for rebid)
 }
