@@ -250,8 +250,16 @@ class NewOrderScreen extends GetView<NewOrderController> {
                   const SizedBox(height: 16),
                   _UploadBtnFigma(
                     label: 'Upload receipt',
-                    onTap: () => controller.uploadReceipt(pref.id, selectedOptionId: controller.answers[pref.id] as int?),
+                    onTap: () => controller.uploadReceipt(
+                      pref.id,
+                      selectedOptionId: controller.answers[pref.id] as int?,
+                    ),
                   ),
+                  // 👇 show files for this preference
+                  Obx(() => _FileChips(
+                    files: controller.filesByPref[pref.id] ?? const [],
+                    onTap: controller.openFile,
+                  )),
                 ],
               ],
             );
@@ -546,3 +554,52 @@ class _StoreBox extends StatelessWidget {
 //   final int sizeKb;
 //   _ReceiptFile({required this.name, required this.sizeKb});
 // }
+
+class _FileChips extends StatelessWidget {
+  const _FileChips({required this.files, required this.onTap});
+  final List<PreferenceFile> files;
+  final void Function(PreferenceFile f) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (files.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: files.map((f) {
+          final name = f.url.split('/').last;
+          return InkWell(
+            onTap: () => onTap(f),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2F2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.insert_drive_file, size: 16, color: Color(0xFF33595B)),
+                const SizedBox(width: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  child: Text(
+                    name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF33595B),
+                      fontSize: 12,
+                      fontFamily: 'Roboto',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}

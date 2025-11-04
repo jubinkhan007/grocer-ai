@@ -1,57 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../ui/theme/app_theme.dart'; // if you still need AppColors
+import '../../../ui/theme/app_theme.dart'; // only for colors elsewhere if you need
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
-  void _openLiveChat() {
+  // If you already wired the copilot sheet, call that here instead.
+  void _openLiveChat(BuildContext context) {
+    // showCopilotSheet(context);  // <- uncomment if you use the sheet provided
     Get.snackbar('Live chat', 'Hook me up to your live chat when ready.');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F6),
+    const _bg = Color(0xFFF4F6F6);
+    const _teal = Color(0xFF33595B);
+    const _divider = Color(0xFFE0E0E0);
 
+    return Scaffold(
+      backgroundColor: _bg,
+
+      // ===== BODY =====
       body: CustomScrollView(
         slivers: [
-          // ===== Top app bar =====
+          /// Top app bar (48 status + 68 toolbar = 116)
           SliverAppBar(
             pinned: true,
             elevation: 0,
-            backgroundColor: const Color(0xFF33595B),
-            collapsedHeight: 117,
-            expandedHeight: 117,
+            backgroundColor: _teal,
+            collapsedHeight: 116,
+            expandedHeight: 116,
             titleSpacing: 0,
             title: Container(
-              color: const Color(0xFF33595B),
+              color: _teal,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: SafeArea(
                 bottom: false,
                 child: Row(
-                  children: [
-                    // back button should actually pop this route
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      style: IconButton.styleFrom(
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      onPressed: Get.back,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
+                  children: const [
+                    _BackChevron(),
+                    SizedBox(width: 8),
+                    Text(
                       'Help & Support',
-                      // Figma: 20 / 700 / white
                       style: TextStyle(
                         color: Color(0xFFFEFEFE),
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
+                        fontFamily: 'Roboto',
                       ),
                     ),
                   ],
@@ -60,10 +55,11 @@ class HelpSupportScreen extends StatelessWidget {
             ),
           ),
 
-          // ===== Body =====
+          /// Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
+              // NOTE: bottom padding keeps content above the nav bar + FAB area.
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
@@ -74,6 +70,7 @@ class HelpSupportScreen extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       height: 1.43,
+                      fontFamily: 'Roboto',
                     ),
                   ),
                   SizedBox(height: 24),
@@ -89,7 +86,7 @@ class HelpSupportScreen extends StatelessWidget {
                       _CardRow(
                         leading: 'Phone Support',
                         value:
-                            'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
+                        'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
                       ),
                       _CardRow.divider(),
                       _CardRow(
@@ -127,7 +124,7 @@ class HelpSupportScreen extends StatelessWidget {
                       _CardRow(
                         leading: 'Password Reset',
                         value:
-                            'Tap “Forgot Password?” on the login page to reset.',
+                        'Tap “Forgot Password?” on the login page to reset.',
                       ),
                     ],
                   ),
@@ -138,13 +135,16 @@ class HelpSupportScreen extends StatelessWidget {
         ],
       ),
 
-      // FAB (chat)
+      /// ===== FAB (64x64 with shadow) =====
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
+        // matches the mock’s ~10px bottom & ~6px right visual gap
         padding: const EdgeInsets.only(bottom: 10, right: 6),
         child: Container(
           width: 64,
           height: 64,
           decoration: const BoxDecoration(
+            shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: Color(0x1915224F),
@@ -152,29 +152,41 @@ class HelpSupportScreen extends StatelessWidget {
                 offset: Offset(0, 4),
               ),
             ],
-            shape: BoxShape.circle,
           ),
           child: FloatingActionButton(
-            onPressed: _openLiveChat,
             elevation: 0,
-            backgroundColor: const Color(0xFF33595B),
+            backgroundColor: _teal,
             shape: const CircleBorder(),
-            child: const Icon(
-              Icons.support_agent,
-              size: 30,
-              color: Colors.white,
-            ),
+            onPressed: () => _openLiveChat(context),
+            child: const Icon(Icons.support_agent, color: Colors.white, size: 30),
           ),
         ),
       ),
 
-      // ⛔️ IMPORTANT: no bottomNavigationBar here.
+      /// ===== Bottom bar (exact layout & shadow) =====
+      // bottomNavigationBar: const _HelpBottomBar(),
     );
   }
 }
 
-/// ===== helper widgets =====
+/// back chevron sized like the mock (14×20 visual)
+class _BackChevron extends StatelessWidget {
+  const _BackChevron();
 
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      splashRadius: 22,
+      onPressed: Get.back,
+      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+          color: Color(0xFFFEFEFE), size: 20),
+    );
+  }
+}
+
+/// ===== Section card exactly as in Figma (title 14/700, divider, paddings) =====
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.rows});
   final String title;
@@ -182,47 +194,49 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // we render rows manually to preserve figma spacing/dividers
-    final contentRows = <Widget>[];
+    const _divider = Color(0xFFE0E0E0);
+
+    final content = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
-      final row = rows[i];
-      if (row.isDivider) {
-        contentRows.add(
+      final r = rows[i];
+      if (r.isDivider) {
+        content.add(
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Container(height: 1, color: const Color(0xFFE0E0E0)),
+            child: Container(height: 1, color: _divider),
           ),
         );
       } else {
         if (i != 0 && !rows[i - 1].isDivider) {
-          contentRows.add(const SizedBox(height: 16));
+          content.add(const SizedBox(height: 16));
         }
-        contentRows.add(row);
+        content.add(r);
       }
     }
 
     return Container(
-      // Card: white, radius 8, padding 16, divider color E0E0E0
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFFEFEFE),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 0),
           Text(
             title,
             style: const TextStyle(
               color: Color(0xFF212121),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 14, // Figma plugin: 14
+              fontWeight: FontWeight.w700, // Figma plugin: 700
+              fontFamily: 'Roboto',
             ),
           ),
           const SizedBox(height: 8),
-          Container(height: 1, color: const Color(0xFFE0E0E0)),
+          Container(height: 1, color: _divider),
           const SizedBox(height: 16),
-          ...contentRows,
+          ...content,
         ],
       ),
     );
@@ -231,7 +245,6 @@ class _SectionCard extends StatelessWidget {
 
 class _CardRow extends StatelessWidget {
   const _CardRow({this.leading, this.value, this.isDivider = false});
-
   final String? leading;
   final String? value;
   final bool isDivider;
@@ -240,10 +253,7 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isDivider) {
-      // handled in _SectionCard above
-      return const SizedBox.shrink();
-    }
+    if (isDivider) return const SizedBox.shrink();
 
     return RichText(
       text: TextSpan(
@@ -255,6 +265,7 @@ class _CardRow extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w500,
               height: 1.43,
+              fontFamily: 'Roboto',
             ),
           ),
           TextSpan(
@@ -264,9 +275,99 @@ class _CardRow extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w400,
               height: 1.43,
+              fontFamily: 'Roboto',
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Bottom bar drawn like the mock (white, top shadow, icons 24, active=Help)
+class _HelpBottomBar extends StatelessWidget {
+  const _HelpBottomBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFFEFEFE),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x2833595B), // same translucent teal shadow in Figma
+            blurRadius: 12,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: const [
+          _BarIcon(icon: Icons.home_outlined),
+          _BarIcon(icon: Icons.percent_outlined),
+          _BarIcon(icon: Icons.shopping_bag_outlined),
+          _BarActive(), // “Help” active exactly like the mock
+          _BarIcon(icon: Icons.person_outline),
+        ],
+      ),
+    );
+  }
+}
+
+class _BarIcon extends StatelessWidget {
+  const _BarIcon({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Icon(icon, size: 24, color: Color(0xFF9AA4A6)),
+      ),
+    );
+  }
+}
+
+/// Center “Help” tile matches the highlighted look in the screenshot.
+class _BarActive extends StatelessWidget {
+  const _BarActive();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 88,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            // small rounded 8 container around the icon (subtle)
+            SizedBox(
+              height: 36,
+              child: Center(
+                child: Icon(Icons.support_agent, size: 24, color: Color(0xFF33595B)),
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Help',
+              style: TextStyle(
+                color: Color(0xFF33595B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Roboto',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

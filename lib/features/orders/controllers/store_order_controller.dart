@@ -7,8 +7,10 @@ import 'package:grocer_ai/features/orders/models/generated_order_model.dart';
 import 'package:grocer_ai/features/orders/views/compare_grocers_screen.dart';
 import 'package:grocer_ai/features/orders/views/store_add_item_screen.dart';
 import 'package:grocer_ai/features/orders/widgets/related_items_sheet.dart';
+import '../../../core/theme/network/dio_client.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../bindings/compare_grocer_binding.dart';
+import '../services/related_items_service.dart';
 
 class StoreOrderController extends GetxController {
   // --- STATE ---
@@ -16,36 +18,32 @@ class StoreOrderController extends GetxController {
   final products = <ProductData>[].obs;
   final fromCompare = false.obs;
 
+  late final RelatedItemsService _relatedSvc;
+  final isLoadingRelated = false.obs;
+
   @override
   void onInit() {
     super.onInit();
+    _relatedSvc = RelatedItemsService(Get.find<DioClient>()); // <-- uses existing DioClient
     _ingestArgs();
-
+    // existing args handling...
     final args = Get.arguments;
-
-    // 1) Direct: arguments is the GeneratedOrderResponse itself
     if (args is GeneratedOrderResponse) {
       provider.value = args.provider;
       products.assignAll(args.products);
-      // fromCompare stays false (normal flow)
       return;
     }
-
-    // 2) Map: arguments contains orderData + fromCompare (compare flow)
     if (args is Map) {
       final od = args['orderData'];
       final fc = args['fromCompare'];
-
       if (od is GeneratedOrderResponse) {
         provider.value = od.provider;
         products.assignAll(od.products);
       }
-
-      if (fc == true) {
-        fromCompare.value = true; // <-- this makes the button read "Checkout"
-      }
+      if (fc == true) fromCompare.value = true;
     }
   }
+
 
   @override
   void onReady() {
@@ -84,17 +82,49 @@ class StoreOrderController extends GetxController {
     // TODO: Add API call to update quantity
   }
 
-  void onItemTap(ProductData product) {
-    // This sheet uses a different model, so we'll stub it
-    // In a real app, you'd fetch related items for product.id
-    showRelatedItemsBottomSheet(
-      Get.context!,
-      items: const [
-        RelatedItem('Mediterranean Breeze Olive Oil', '\$75.30/litter', '\$23.8'),
-        RelatedItem('Verdant Valley Olive Oil', '\$75.30/litter', '\$23.8'),
-      ],
-    );
+  void onItemTap(ProductData product) async {
+    try {
+      isLoadingRelated.value = true;
+
+      // 1) Fetch from API
+      final results = await _relatedSvc.fetch(productId: product.id);
+
+      // 2) Map to your existing UI data class WITHOUT changing visuals
+      final tiles = results.map((p) {
+        // The sheet expects a 64x64 visual; we’ll feed it a network image
+        final thumb = ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.network(
+            p.image,
+            width: 64, height: 64, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const Text('🫙', style: TextStyle(fontSize: 28)),
+          ),
+        );
+
+        return RelatedItem(
+          p.name,
+          p.unitPrice,               // shows as the “unit” line (e.g. $8.75/kg)
+          '\$${p.price}',            // shows as the price line
+          emoji: thumb,              // slot used as icon/image
+        );
+      }).toList();
+
+      // 3) Open the bottom sheet (exact same UI)
+      await showRelatedItemsBottomSheet(
+        Get.context!,
+        items: tiles,
+        onTapItem: (sel) {
+          // Optional: add to cart / replace item, etc.
+          // Keep visuals unchanged; you can wire logic here later.
+        },
+      );
+    } catch (e) {
+      Get.snackbar('Related items', 'Failed to load related products.');
+    } finally {
+      isLoadingRelated.value = false;
+    }
   }
+
 
   Future<bool> onDismissConfirm(DismissDirection dir) async {
     return await _showDeleteDialog(Get.context!) ?? false;

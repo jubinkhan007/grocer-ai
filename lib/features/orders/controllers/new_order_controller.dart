@@ -7,7 +7,9 @@ import 'package:grocer_ai/features/orders/models/order_preference_model.dart';
 import 'package:grocer_ai/features/orders/services/order_preference_service.dart';
 import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/theme/network/dio_pretty.dart';
 import '../../../media/services/media_service.dart';
 import '../bindings/store_order_binding.dart';
 import '../models/generated_order_model.dart';
@@ -30,6 +32,7 @@ class NewOrderController extends GetxController {
   // --- NEW: Store ID for the selected store on this screen ---
   // We'll default to 1 (Walmart) based on the static UI
   final selectedStoreId = 1.obs;
+  final filesByPref = <int, List<PreferenceFile>>{}.obs;
 
   /// Currently selected store on the New Order screen
   final RxString selectedStore = 'Walmart'.obs;
@@ -55,22 +58,23 @@ class NewOrderController extends GetxController {
   }
 
   Future<void> loadData() async {
+    isLoading.value = true;
     try {
-      isLoading.value = true;
-      final savedPrefs = await _service.fetchSavedPreferences();
-      final questions  = await _service.fetchOrderPreferences();
-
-      for (final saved in savedPrefs) {
-        if (saved.selectedOption != null) {
-          answers[saved.preference] = saved.selectedOption;
-        } else if (saved.additionInfo != null) {
-          answers[saved.preference] = saved.additionInfo;
-        }
-      }
-
+      final questions = await _service.fetchOrderPreferences();
       preferences.assignAll(questions);
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to load order preferences: $e');
+
+      final saved = await _service.fetchSavedPreferences();
+      // seed answers + files map
+      filesByPref.clear();
+      for (final s in saved) {
+        if (s.selectedOption != null) {
+          answers[s.preference] = s.selectedOption;
+        } else if ((s.additionInfo ?? '').isNotEmpty) {
+          answers[s.preference] = s.additionInfo;
+        }
+        filesByPref[s.preference] = s.files; // <-- keep files
+      }
+      filesByPref.refresh();
     } finally {
       isLoading.value = false;
     }
@@ -113,7 +117,15 @@ class NewOrderController extends GetxController {
       );
       await _service.saveOrderPreference(payload);
     } catch (e) {
-      Get.snackbar('Save Error', 'Failed to save preference: $e');
+      Get.snackbar(
+        'Error',
+        DioPretty.message(e),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+        colorText: const Color(0xFFFFFFFF),
+        duration: const Duration(seconds: 6),
+      );
     }
   }
 
@@ -158,7 +170,15 @@ class NewOrderController extends GetxController {
       );
 
     } catch (e) {
-      Get.snackbar('Error', 'Failed to generate order: $e');
+      Get.snackbar(
+        'Error',
+        DioPretty.message(e),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.95),
+        colorText: const Color(0xFFFFFFFF),
+        duration: const Duration(seconds: 6),
+      );
     } finally {
       isGeneratingOrder.value = false;
     }
@@ -166,19 +186,14 @@ class NewOrderController extends GetxController {
 
   /// Upload receipt flow: permission -> pick -> upload -> save (ids or urls)
   Future<void> uploadReceipt(int preferenceId, {int? selectedOptionId}) async {
-    // (Optional) Ask storage/photos permissions to avoid OEM quirks
     final ok = await _ensureFileAccessPermission();
-    if (!ok) {
-      Get.snackbar('Permission', 'Storage/Photos permission denied.');
-      return;
-    }
+    if (!ok) { Get.snackbar('Permission', 'Storage/Photos permission denied.'); return; }
 
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     if (result == null) return;
 
     final uploaded = await _mediaSvc.uploadMany(result.files);
 
-    // Prefer IDs when backend returns them
     final ids = uploaded.where((m) => m.id != null).map((m) => m.id!).toList();
     if (ids.isNotEmpty) {
       await _orderSvc.saveWithFileIds(
@@ -186,18 +201,41 @@ class NewOrderController extends GetxController {
         selectedOptionId: selectedOptionId,
         fileIds: ids,
       );
-      Get.snackbar('Uploaded', 'Files saved to your preference.');
-      return;
+    } else {
+      final urls = uploaded.map((m) => m.url).toList();
+      await _orderSvc.saveWithFileUrls(
+        preferenceId: preferenceId,
+        selectedOptionId: selectedOptionId,
+        urls: urls,
+      );
     }
 
-    // Otherwise send URLs (ensure server accepts `file_urls`)
-    final urls = uploaded.map((m) => m.url).toList();
-    await _orderSvc.saveWithFileUrls(
-      preferenceId: preferenceId,
-      selectedOptionId: selectedOptionId,
-      urls: urls,
-    );
     Get.snackbar('Uploaded', 'Files saved to your preference.');
+
+    // 🔄 refresh saved so UI shows files
+    await _refreshSinglePref(preferenceId);
+  }
+  Future<void> _refreshSinglePref(int prefId) async {
+    // simplest: re-fetch all saved and update maps
+    final saved = await _service.fetchSavedPreferences();
+    for (final s in saved) {
+      if (s.preference == prefId) {
+        filesByPref[prefId] = s.files;
+      }
+      // also keep answers in sync if needed
+      if (s.selectedOption != null) answers[s.preference] = s.selectedOption;
+      if ((s.additionInfo ?? '').isNotEmpty) answers[s.preference] = s.additionInfo;
+    }
+    answers.refresh();
+    filesByPref.refresh();
+  }
+  Future<void> openFile(PreferenceFile f) async {
+    final uri = Uri.parse(f.url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar('Unable to open', f.url);
+    }
   }
 
   Future<bool> _ensureFileAccessPermission() async {

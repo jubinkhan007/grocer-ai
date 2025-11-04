@@ -11,7 +11,7 @@ class PayCTA extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
         color: Colors.transparent,
         child: SizedBox(
           height: 56,

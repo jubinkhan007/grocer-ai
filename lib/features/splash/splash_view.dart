@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart'; // Keep GetStorage for onboarding check
+import 'package:flutter_svg/flutter_svg.dart'; // Import flutter_svg
 import '../../app/app_routes.dart';
 import '../auth/auth_controller.dart'; // <-- Import AuthController
 
@@ -49,21 +50,16 @@ class _SplashViewState extends State<SplashView> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F4F6), // same as onboarding bg
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Logo anchored ~bottom as per Figma (use Align + Padding)
-            Align(
-              alignment: const Alignment(0, 0.75),
-              child: Image.asset(
-                'assets/images/logo_grocerai.png', // your logo
-                width: MediaQuery.of(context).size.width * 0.75,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ],
+      backgroundColor: const Color(0xFFF1F4F6),
+      // Center in the *entire* screen, not within SafeArea
+      body: Center(
+        child: SvgPicture.asset(
+          'assets/images/grocerai_3.svg',  // Use the SVG asset here
+          width: size.width * 0.65, // tweak if you want it larger/smaller
+          fit: BoxFit.contain,
         ),
       ),
     );

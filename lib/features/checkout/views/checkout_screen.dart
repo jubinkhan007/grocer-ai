@@ -14,6 +14,7 @@ import '../widgets/pay_cta.dart';
 import '../widgets/timing_card.dart';
 import 'add_change_location.dart';
 import 'add_payment_method_screen.dart';
+import 'order_success_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -158,7 +159,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           // sticky CTA at bottom
           PayCTA(
             onTap: () {
-              // TODO: trigger pay flow
+              // Navigate to the CongratulationsScreen when the button is pressed
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CongratulationsScreen(),
+                ),
+              );
             },
           ),
         ],

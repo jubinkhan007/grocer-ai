@@ -21,6 +21,19 @@
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 <string>We use your location to provide accurate, location-based services.</string>
 
+<key>NSAppTransportSecurity</key>
+<dict>
+  <!-- Dev only: remove before release -->
+  <key>NSAllowsArbitraryLoads</key><true/>
+  <key>NSExceptionDomains</key>
+  <dict>
+    <key>45.88.223.47</key>
+    <dict>
+      <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key><true/>
+      <key>NSIncludesSubdomains</key><true/>
+    </dict>
+  </dict>
+</dict>
 <!-- Older iOS variants / some review tools still look for this -->
 <key>NSLocationAlwaysUsageDescription</key>
 <string>We use your location to provide accurate, location-based services.</string>

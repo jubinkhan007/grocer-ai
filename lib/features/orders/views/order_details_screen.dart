@@ -11,7 +11,6 @@ class OrderDetailsScreen extends StatefulWidget {
 }
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
-  // (Details fetch stub)
   Future<void> _loadDetails() async {
     await Future<void>.delayed(const Duration(milliseconds: 1));
   }
@@ -25,17 +24,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // page bg = #F4F6F6
       backgroundColor: const Color(0xFFF4F6F6),
       body: CustomScrollView(
         slivers: [
-          /// ===== Figma header =====
+          /// ===== HEADER (exact like mock) =====
           SliverAppBar(
             automaticallyImplyLeading: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: const Color(0xFF33595B), // app bar fill
-            collapsedHeight: 96, // 48 status + 48 toolbar visual
+            backgroundColor: const Color(0xFF33595B),
+            collapsedHeight: 88,            // <- exact
+            toolbarHeight: 88,              // <- exact
             titleSpacing: 0,
             title: Container(
               color: const Color(0xFF33595B),
@@ -46,10 +45,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   children: [
                     IconButton(
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      constraints:
+                      const BoxConstraints(minWidth: 40, minHeight: 40),
                       onPressed: Get.back,
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Color(0xFFFEFEFE), size: 20),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Color(0xFFFEFEFE),
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     const Text(
@@ -67,35 +70,41 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
           ),
 
-          /// ===== Content =====
+          /// ===== CONTENT =====
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// ID + Date (left/right)
+                  /// ID + Date
                   Row(
                     children: const [
                       Expanded(
                         child: _KV(label: 'Order ID:', value: '#5677654'),
                       ),
                       Expanded(
-                        child:
-                        _KV(label: 'Order date:', value: '25 Dec 2024', alignEnd: true),
+                        child: _KV(
+                          label: 'Order date:',
+                          value: '25 Dec 2024',
+                          alignEnd: true,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  /// Store mini card
+                  /// Store mini card (radius 16)
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEFEFE),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16), // <- exact
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -112,9 +121,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                               'assets/brands/walmart.png',
                               width: 24,
                               height: 24,
-                              errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.storefront_rounded,
-                                  color: AppColors.teal),
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.storefront_rounded,
+                                color: AppColors.teal,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -138,7 +148,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   const SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 2),
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFEF1D7),
                                       borderRadius: BorderRadius.circular(40),
@@ -166,7 +178,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           ),
                           const SizedBox(width: 16),
 
-                          /// price + items (right)
+                          /// price + items
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: const [
@@ -204,38 +216,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  /// Delivery address card
+                  /// Delivery address (radius 16)
                   _CardBlock(
                     title: 'Delivery address',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _ThinDivider(),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: const [
-                            Icon(Icons.location_on_outlined,
-                                size: 20, color: Color(0xFF33595B)),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '1234 Maple Street, Springfield, IL 62704, USA',
-                                style: TextStyle(
-                                  color: Color(0xFF212121),
-                                  fontSize: 12,
-                                  fontFamily: 'Roboto',
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      children: const [
+                        _ThinDivider(),
+                        SizedBox(height: 12),
+                        _AddressRow(),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  /// Order summary card
+                  /// Order summary (radius 16)
                   _CardBlock(
                     title: 'Order summary',
                     child: Column(
@@ -271,26 +266,39 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  /// CTA (rounded 100)
+                  /// CTA (pill + soft shadow like mock)
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => Get.to(() => const OrderTrackingScreen()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF33595B),
-                        foregroundColor: const Color(0xFFFEFEFE),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
-                        ),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x1915224F), // subtle
+                            blurRadius: 16,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                        borderRadius: BorderRadius.circular(100),
                       ),
-                      child: const Text(
-                        'Track order',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Roboto',
-                          fontWeight: FontWeight.w600,
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            Get.to(() => const OrderTrackingScreen()),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF33595B),
+                          foregroundColor: const Color(0xFFFEFEFE),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                        child: const Text(
+                          'Track order',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -301,12 +309,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         ],
       ),
-      // NOTE: Figma detail screen does not show the bottom nav, so we omit FFBottomNav here.
     );
   }
 }
 
-/// ===== Small atoms to match Figma text styles =====
+/// ===== Atoms (unchanged metrics except card radius) =====
 
 class _KV extends StatelessWidget {
   const _KV({required this.label, required this.value, this.alignEnd = false});
@@ -389,7 +396,7 @@ class _CardBlock extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFFEFEFE),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16), // <- exact
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -425,6 +432,32 @@ class _ThinDivider extends StatelessWidget {
   }
 }
 
+class _AddressRow extends StatelessWidget {
+  const _AddressRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        Icon(Icons.location_on_outlined,
+            size: 20, color: Color(0xFF33595B)),
+        SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '1234 Maple Street, Springfield, IL 62704, USA',
+            style: TextStyle(
+              color: Color(0xFF212121),
+              fontSize: 12,
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.label,
@@ -453,7 +486,6 @@ class _SummaryRow extends StatelessWidget {
             ),
           ),
         ),
-        // small spacer for the icon slot shown in Figma
         const SizedBox(width: 16),
         Text(
           '$prefix  $value',

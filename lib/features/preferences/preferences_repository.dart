@@ -1,4 +1,3 @@
-// lib/features/preferences/preferences_repository.dart
 import 'package:dio/dio.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
@@ -8,17 +7,29 @@ class PreferencesRepository {
   final DioClient _client;
   PreferencesRepository(this._client);
 
-  /// GET /api/v1/preferences/ (paginated)
+  /// GET /api/v1/preferences/ (paginated) — fetch ALL pages
   Future<List<PreferenceItem>> fetchAll() async {
     try {
-      final res = await _client.dio.get<Map<String, dynamic>>(
-        ApiPath.preferences,
-      );
-      final data = (res.data ?? const {}) as Map<String, dynamic>;
-      final list = (data['results'] as List? ?? const []);
-      return list
-          .map((e) => PreferenceItem.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final items = <PreferenceItem>[];
+
+      String? nextUrl = ApiPath.preferences; // first page
+
+      while (nextUrl != null && nextUrl.isNotEmpty) {
+        final res = await _client.dio.get<Map<String, dynamic>>(nextUrl);
+        final data = (res.data ?? const {}) as Map<String, dynamic>;
+
+        final list = (data['results'] as List? ?? const []);
+        items.addAll(list
+            .map((e) => PreferenceItem.fromJson(e as Map<String, dynamic>))
+            .toList());
+
+        final dynamic next = data['next'];
+        nextUrl = (next == null || next.toString().trim().isEmpty)
+            ? null
+            : next.toString();
+      }
+
+      return items;
     } on DioException catch (e) {
       throw (e.error is ApiFailure
           ? e.error as ApiFailure
@@ -38,11 +49,11 @@ class PreferencesRepository {
   }
 }
 
-/// ----------------- Models (loosely typed to survive schema tweaks) -----------------
+/// ----------------- Models -----------------
 class PreferenceItem {
   final int id;
   final String type; // single | multiple | number | num_rng
-  final String title; // “Nearby Grocers”...
+  final String title;
   final String? helpText;
   final String listType; // “hor” | “ver”
   final bool isMandatory;
@@ -75,8 +86,8 @@ class PrefOption {
   final int id;
   final String? label;
   final String? icon;
-  final int? numberValue; // for number screens
-  final String? rangeText; // for num_rng screens
+  final int? numberValue;
+  final String? rangeText;
 
   PrefOption({
     required this.id,
@@ -96,11 +107,11 @@ class PrefOption {
 }
 
 class UserPrefPayload {
-  final int preference; // preference id
-  final int? selectedOption; // for single choice
-  final List<int>? selectedOptions; // for multiple choice
-  final String? additionInfo; // notes
-  final String? numberValue; // numeric value as string when applicable
+  final int preference;
+  final int? selectedOption; // single choice OR numeric option id
+  final List<int>? selectedOptions; // multi
+  final String? additionInfo;
+  final String? numberValue; // when sending a free numeric value
 
   UserPrefPayload({
     required this.preference,

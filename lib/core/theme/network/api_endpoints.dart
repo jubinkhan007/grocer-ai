@@ -39,6 +39,9 @@ class ApiPath {
   static const String orderPreferenceList = '/api/v1/order-preference-list/';
   static const String orderPreferences = '/api/v1/order-preferences/';
 
+  // order-items
+  static const relatedProducts = '/api/v1/related-products/';
+
   // media upload
   static const String mediaUpload = '/api/v1/media/';
 

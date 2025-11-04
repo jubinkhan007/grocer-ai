@@ -100,7 +100,7 @@ class SavedOrderPreference {
   final List<int> selectedOptions;
   final String? additionInfo;
   final String? numberValue;
-  final List<dynamic> files; // Assuming files are just IDs or URLs
+  final List<PreferenceFile> files; // Assuming files are just IDs or URLs
 
   SavedOrderPreference({
     required this.id,
@@ -122,7 +122,10 @@ class SavedOrderPreference {
           .toList(),
       additionInfo: json['addition_info'],
       numberValue: json['number_value'],
-      files: json['files'] as List? ?? [],
+      files: (json['files'] as List? ?? [])
+          .map((e) => PreferenceFile.fromJson(e as Map<String, dynamic>))
+          .toList(),
+
     );
   }
 }
@@ -162,4 +165,14 @@ class OrderPreferenceRequest {
     }
     return data;
   }
+}
+
+
+class PreferenceFile {
+  final int id;
+  final String url;
+  const PreferenceFile({required this.id, required this.url});
+
+  factory PreferenceFile.fromJson(Map<String, dynamic> j) =>
+      PreferenceFile(id: j['id'] ?? 0, url: (j['file'] ?? '').toString());
 }

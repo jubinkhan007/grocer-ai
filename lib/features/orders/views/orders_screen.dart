@@ -62,26 +62,23 @@ class _OrderScreenState extends State<OrderScreen> {
       backgroundColor: const Color(0xFFF4F6F6), // Figma bg
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
+          // status bar strip (dark like Figma)
+          SliverToBoxAdapter(
+            child: Container(
+              height: MediaQuery.of(context).padding.top,
+              color: const Color(0xFF002C2E),
+            ),
+          ),
+
+// compact pinned header (64 px under the status bar)
+          SliverPersistentHeader(
             pinned: true,
-            elevation: 0,
-            backgroundColor: const Color(0xFF33595B), // Figma teal
-            collapsedHeight: headerHeight,
-            expandedHeight: headerHeight,
-            titleSpacing: 0,
-            title: TitleBar(
+            delegate: _OrderHeader(
+              height: 64,
+              title: 'Order',
               showRange: _segIndex == 1,
               rangeText: _historyRange,
-              onRangeTap: () async {
-                final picked = await showMenu<String>(
-                  context: context,
-                  position: const RelativeRect.fromLTRB(200, 90, 16, 0),
-                  items: const [
-                    PopupMenuItem(value: 'Last 30 days', child: Text('Last 30 days')),
-                    PopupMenuItem(value: 'Last 3 months', child: Text('Last 3 months')),
-                    PopupMenuItem(value: 'Last 6 months', child: Text('Last 6 months')),
-                  ],
-                );
+              onPickRange: (picked) {
                 if (picked != null) {
                   setState(() => _historyRange = picked);
                   _loadHistory(picked);
@@ -89,7 +86,6 @@ class _OrderScreenState extends State<OrderScreen> {
               },
             ),
           ),
-
           // Segmented control (top = 146 in figma; padding here yields same visual)
           SliverToBoxAdapter(
             child: Padding(
@@ -267,6 +263,171 @@ class _OrderScreenState extends State<OrderScreen> {
         ],
       ),
       // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
+    );
+  }
+}
+
+class _OrderHeader extends SliverPersistentHeaderDelegate {
+  _OrderHeader({
+    required this.height,
+    required this.title,
+    required this.showRange,
+    required this.rangeText,
+    required this.onPickRange,
+  });
+
+  final double height;
+  final String title;
+  final bool showRange;
+  final String rangeText;
+  final ValueChanged<String?> onPickRange;
+
+  @override
+  double get minExtent => height;
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Material(
+      color: const Color(0xFF33595B),
+      child: Padding(
+        // Figma: 24 horizontal, 12 vertical (visually gives ~64 height)
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints.tight(Size(20, 20)),
+            ),
+            const SizedBox(width: 8),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFFFEFEFE),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+              ),
+            ),
+            const Spacer(),
+            if (showRange)
+              _RangeDropdownButton(
+                text: rangeText,
+                onSelected: onPickRange,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _OrderHeader old) =>
+      old.height != height ||
+          old.title != title ||
+          old.showRange != showRange ||
+          old.rangeText != rangeText;
+}
+
+class _RangeDropdownButton extends StatefulWidget {
+  const _RangeDropdownButton({required this.text, required this.onSelected});
+  final String text;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  State<_RangeDropdownButton> createState() => _RangeDropdownButtonState();
+}
+
+class _RangeDropdownButtonState extends State<_RangeDropdownButton> {
+  final GlobalKey _btnKey = GlobalKey();
+
+  Future<void> _openMenu() async {
+    final box = _btnKey.currentContext!.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final offset = box.localToGlobal(Offset.zero, ancestor: overlay);
+
+    final picked = await showMenu<String>(
+      context: context,
+      color: const Color(0xFF33595B), // dark teal panel
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      position: RelativeRect.fromLTRB(
+        offset.dx + box.size.width - 8,               // right-align to button
+        offset.dy + box.size.height + 6,              // small gap below
+        overlay.size.width - offset.dx,
+        0,
+      ),
+      items: const [
+        PopupMenuItem<String>(
+          value: 'Last month',
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            child: Text('Last month',
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'Last 2 months',
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            child: Text('Last 2 months',
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'Last 3 months',
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            child: Text('Last 3 months',
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'Last 6 months',
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            child: Text('Last 6 months',
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+          ),
+        ),
+      ],
+    );
+
+    widget.onSelected(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Trigger chip (rounded, darker than app bar, white text)
+    return GestureDetector(
+      key: _btnKey,
+      onTap: _openMenu,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D5153),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              widget.text,
+              style: const TextStyle(
+                color: Color(0xFFFEFEFE),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.keyboard_arrow_down, color: Color(0xFFFEFEFE), size: 18),
+          ],
+        ),
+      ),
     );
   }
 }

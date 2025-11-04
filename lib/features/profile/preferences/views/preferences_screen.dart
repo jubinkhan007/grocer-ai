@@ -1,5 +1,3 @@
-// lib/features/profile/preferences/views/preferences_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -12,14 +10,11 @@ const _tealStatus = Color(0xFF002C2E); // dark strip behind status bar
 const _tealHeader = Color(0xFF33595B); // app bar + buttons
 const _textPrimary = Color(0xFF212121);
 const _textSecondary = Color(0xFF4D4D4D);
-const _familyRowLabel = Color(0xFF4D4D4D); // "Adults" etc in view mode card
-const _familyEditLabel = Color(0xFF414141); // label in edit mode rows
-const _chipBg = Color(0xFFF5F5F5); // default chip bg
-const _chipSelectedBg = Color(0xFFD0DADC); // selected chip bg IN EDIT MODE
+const _familyRowLabel = Color(0xFF4D4D4D);
+const _familyEditLabel = Color(0xFF414141);
+const _chipBg = Color(0xFFF5F5F5);
+const _chipSelectedBg = Color(0xFFD0DADC);
 const _cardBg = Colors.white;
-const _dividerStroke = Color(0xFFE0E0E0); // only used in the old layout
-// NOTE: Figma doesn't actually draw these dividers in edit mode anymore,
-// but we'll keep the token around just in case we need it.
 
 class PreferencesScreen extends StatelessWidget {
   const PreferencesScreen({super.key});
@@ -28,7 +23,6 @@ class PreferencesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.find<PreferencesController>();
 
-    // Match light status content on dark #002C2E bar behind SafeArea
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: _tealStatus,
       statusBarIconBrightness: Brightness.light,
@@ -44,39 +38,34 @@ class PreferencesScreen extends StatelessWidget {
 
         final isEditing = c.isEditing.value;
 
-        // 👇 Force GetX to subscribe to these reactive fields
+        // Triggers for Obx rebuilds
         final dietRev = c.selectedDietIds.length;
         final cuisineRev = c.selectedCuisineIds.length;
         final freqRev = c.selectedFrequencyId.value;
+        final budgetRev = c.selectedBudgetId.value;
+        final allergyRev = c.selectedAllergyIds.length;
 
         return Column(
           children: [
-            // Top chrome: dark status bar strip + teal header bar
             _PreferencesHeader(
               isEditing: isEditing,
-              onBack: () {
-                Navigator.of(context).pop(); // <- use the local Navigator
-              },
+              onBack: () => Navigator.of(context).pop(),
               onTapEdit: () {
-                if (!c.isEditing.value) {
-                  c.isEditing.value = true;
-                }
+                if (!c.isEditing.value) c.isEditing.value = true;
               },
             ),
 
-
-            // Scrollable body
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Intro paragraph (14 / 400 / #212121)
                           const Text(
                             'Select your preferences below to unlock a world of personalized dishes and delightful culinary content crafted just for you.',
                             style: TextStyle(
@@ -90,269 +79,205 @@ class PreferencesScreen extends StatelessWidget {
 
                           const SizedBox(height: 24),
 
-                          /// ===== 1. FAMILY SIZE =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle('What is your family size?'),
-                                const SizedBox(height: 16),
-                                isEditing
-                                    ? _FamilySizeEditBlock(controller: c)
-                                    : _FamilySizeViewBlock(controller: c),
-                              ],
+                          /// ===== 1) HOUSEHOLD (only if API provides it) =====
+                          if (c.house != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('What is your family size?'),
+                                  const SizedBox(height: 16),
+                                  isEditing
+                                      ? _FamilySizeEditBlock(controller: c)
+                                      : _FamilySizeViewBlock(controller: c),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 2. DIETARY PREFERENCE =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle('What is your dietary preference?'),
-                                const SizedBox(height: 16),
-                                _ChipsWrap(
-                                  key: ValueKey('diet_$dietRev'),
-                                  options: c.diet?.options ?? const [],
-                                  selectedIds: c.selectedDietIds,
-                                  editable: isEditing,
-                                  onTapChip: (opt) {
-                                    if (!isEditing) return;
-                                    if (c.selectedDietIds.contains(opt.id)) {
-                                      c.selectedDietIds.remove(opt.id);
-                                    } else {
-                                      c.selectedDietIds.add(opt.id);
-                                    }
-                                    c.submitDiet();
-                                  },
-                                ),
-                              ],
+                          /// ===== 2) DIET =====
+                          if (c.diet != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('What is your dietary preference?'),
+                                  const SizedBox(height: 16),
+                                  _ChipsWrap(
+                                    key: ValueKey('diet_$dietRev'),
+                                    options: c.diet!.options,
+                                    selectedIds: c.selectedDietIds,
+                                    editable: isEditing,
+                                    onTapChip: (opt) {
+                                      if (!isEditing) return;
+                                      if (c.selectedDietIds.contains(opt.id)) {
+                                        c.selectedDietIds.remove(opt.id);
+                                      } else {
+                                        c.selectedDietIds.add(opt.id);
+                                      }
+                                      c.submitDiet();
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 3. CUISINE PREFERENCE =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle('What is your cuisine preference?'),
-                                const SizedBox(height: 16),
-                                _ChipsWrap(
-                                  key: ValueKey('cuisine_$cuisineRev'),
-                                  options: c.cuisine?.options ?? const [],
-                                  selectedIds: c.selectedCuisineIds,
-                                  editable: isEditing,
-                                  onTapChip: (opt) {
-                                    if (!isEditing) return;
-                                    if (c.selectedCuisineIds.contains(opt.id)) {
-                                      c.selectedCuisineIds.remove(opt.id);
-                                    } else {
-                                      c.selectedCuisineIds.add(opt.id);
-                                    }
-                                    c.submitCuisine();
-                                  },
-                                ),
-                              ],
+                          /// ===== 3) CUISINE =====
+                          if (c.cuisine != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('What is your cuisine preference?'),
+                                  const SizedBox(height: 16),
+                                  _ChipsWrap(
+                                    key: ValueKey('cuisine_$cuisineRev'),
+                                    options: c.cuisine!.options,
+                                    selectedIds: c.selectedCuisineIds,
+                                    editable: isEditing,
+                                    onTapChip: (opt) {
+                                      if (!isEditing) return;
+                                      if (c.selectedCuisineIds.contains(opt.id)) {
+                                        c.selectedCuisineIds.remove(opt.id);
+                                      } else {
+                                        c.selectedCuisineIds.add(opt.id);
+                                      }
+                                      c.submitCuisine();
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 4. DIETARY RESTRICTIONS =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle(
-                                    'Do you have any dietary restrictions?'),
-                                const SizedBox(height: 16),
-                                _StaticChipWrap(
-                                  chips: isEditing
-                                      ? const [
-                                    _StaticChipData('Vegetarian'),
-                                    _StaticChipData('Vegan'),
-                                    _StaticChipData('Gluten-Free'),
-                                    _StaticChipData('Low-Carb'),
-                                    _StaticChipData('Low-Fat'),
-                                    _StaticChipData('Dairy-Free'),
-                                    _StaticChipData('Nut-Free', selected: true),
-                                    _StaticChipData('Pescatarian'),
-                                    _StaticChipData('Keto'),
-                                    _StaticChipData('Paleo'),
-                                    _StaticChipData('High-Protein'),
-                                  ]
-                                      : const [
-                                    _StaticChipData('Nut-Free', selected: true),
-                                  ],
-                                  editable: isEditing,
-                                ),
-                              ],
+                          /// ===== 4) ALLERGIES (optional per API) =====
+                          if (c.allergies != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('Do you have any allergies?'),
+                                  const SizedBox(height: 16),
+                                  _ChipsWrap(
+                                    key: ValueKey('allergy_$allergyRev'), // <-- ADD KEY
+                                    options: c.allergies!.options,
+                                    selectedIds: c.selectedAllergyIds,     // <-- reactive RxSet
+                                    editable: isEditing,
+                                    onTapChip: (opt) {
+                                      if (!isEditing) return;
+                                      if (c.selectedAllergyIds.contains(opt.id)) {
+                                        c.selectedAllergyIds.remove(opt.id);
+                                      } else {
+                                        c.selectedAllergyIds.add(opt.id);
+                                      }
+                                      c.submitAllergies();
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 5. ALLERGIES =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle('Do you have any allergies?'),
-                                const SizedBox(height: 16),
-                                _StaticChipWrap(
-                                  chips: isEditing
-                                      ? const [
-                                    _StaticChipData('Diary'),
-                                    _StaticChipData('Nut'),
-                                    _StaticChipData('Seafood'),
-                                    _StaticChipData('Gluten', selected: true),
-                                    _StaticChipData('Soy'),
-                                    _StaticChipData('Egg'),
-                                  ]
-                                      : const [
-                                    _StaticChipData('Gluten', selected: true),
-                                  ],
-                                  editable: isEditing,
-                                ),
-                              ],
+                          /// ===== 5) FREQUENCY =====
+                          if (c.frequency != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('What is your shopping frequency?'),
+                                  const SizedBox(height: 16),
+                                  Builder(
+                                    builder: (_) {
+                                      final selectedFreqIds = <int>{};
+                                      if (c.selectedFrequencyId.value != null) {
+                                        selectedFreqIds
+                                            .add(c.selectedFrequencyId.value!);
+                                      }
+                                      return _ChipsWrap(
+                                        key: ValueKey('freq_$freqRev'),
+                                        options: c.frequency!.options,
+                                        selectedIds: selectedFreqIds,
+                                        editable: isEditing,
+                                        singleSelect: true,
+                                        onTapChip: (opt) {
+                                          if (!isEditing) return;
+                                          c.selectedFrequencyId.value = opt.id;
+                                          c.submitFrequency();
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 6. SPICE LEVEL =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle(
-                                    'How adventurous are you with spice?'),
-                                const SizedBox(height: 16),
-                                _StaticChipWrap(
-                                  chips: isEditing
-                                      ? const [
-                                    _StaticChipData('Mild'),
-                                    _StaticChipData('Medium'),
-                                    _StaticChipData('Spicy', selected: true),
-                                  ]
-                                      : const [
-                                    _StaticChipData('Spicy', selected: true),
-                                  ],
-                                  editable: isEditing,
-                                ),
-                              ],
+                          /// ===== 6) BUDGET (Spending limit per week) =====
+                          if (c.budget != null) ...[
+                            _CardShell(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const _CardTitle('Spending limit per week'),
+                                  const SizedBox(height: 16),
+                                  _ChipsWrap(
+                                    key: ValueKey('budget_$budgetRev'),
+                                    options: c.budget!.options,
+                                    selectedIds: {
+                                      if (c.selectedBudgetId.value != null)
+                                        c.selectedBudgetId.value!,
+                                    },
+                                    editable: isEditing,
+                                    singleSelect: true,
+                                    // show range_text when label is null
+                                    onTapChip: (opt) {
+                                      if (!isEditing) return;
+                                      c.selectedBudgetId.value = opt.id;
+                                      c.submitBudget();
+                                    },
+                                    labelResolver: (opt) =>
+                                    opt.label ?? (opt.rangeText ?? ''),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
 
-                          const SizedBox(height: 16),
-
-                          /// ===== 7. COOK TIME =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle(
-                                    'How much time do you prefer to spend on preparing a meal?'),
-                                const SizedBox(height: 16),
-                                _StaticChipWrap(
-                                  chips: isEditing
-                                      ? const [
-                                    _StaticChipData('15-30 mins'),
-                                    _StaticChipData('30-45 mins',
-                                        selected: true),
-                                    _StaticChipData('45 mins & above'),
-                                  ]
-                                      : const [
-                                    _StaticChipData('30-45 mins',
-                                        selected: true),
-                                  ],
-                                  editable: isEditing,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          /// ===== 8. SHOPPING FREQUENCY =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle(
-                                    'What is your shopping frequency?'),
-                                const SizedBox(height: 16),
-                                Builder(
-                                  builder: (_) {
-                                    final selectedFreqIds = <int>{};
-                                    if (c.selectedFrequencyId.value != null) {
-                                      selectedFreqIds
-                                          .add(c.selectedFrequencyId.value!);
-                                    }
-
-                                    return _ChipsWrap(
-                                      key: ValueKey('freq_$freqRev'),
-                                      options: c.frequency?.options ?? const [],
-                                      selectedIds: selectedFreqIds,
-                                      editable: isEditing,
-                                      singleSelect: true,
-                                      onTapChip: (opt) {
-                                        if (!isEditing) return;
-                                        c.selectedFrequencyId.value = opt.id;
-                                        c.submitFrequency();
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          /// ===== 9. COMFORT LEVEL =====
-                          _CardShell(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const _CardTitle(
-                                    "What's your comfort level in the kitchen?"),
-                                const SizedBox(height: 16),
-                                _StaticChipWrap(
-                                  chips: isEditing
-                                      ? const [
-                                    _StaticChipData('Beginner'),
-                                    _StaticChipData('Intermediate'),
-                                    _StaticChipData('Advanced'),
-                                  ]
-                                      : const [
-                                    _StaticChipData('Intermediate',
-                                        selected: true),
-                                  ],
-                                  editable: isEditing,
-                                ),
-                              ],
-                            ),
-                          ),
+                          // Note: restrictions, spice, cook-time, comfort
+                          // are intentionally omitted because the API does not
+                          // return them. We only render what exists.
 
                           // Save pill at the bottom in edit mode
                           if (isEditing) ...[
                             const SizedBox(height: 24),
                             _SaveButtonPill(
                               onSave: () async {
-                                await c.submitHousehold();
-                                await c.submitDiet();
-                                await c.submitCuisine();
-                                await c.submitFrequency();
+                                final steps = <Future<bool> Function()>[
+                                  c.submitHousehold,
+                                  c.submitDiet,
+                                  c.submitCuisine,
+                                  c.submitFrequency,
+                                  c.submitBudget,
+                                  c.submitAllergies,
+                                  // IMPORTANT: do not enforce mandatory when saving from the footer,
+                                  // because this section isn’t shown in the UI.
+                                      () => c.submitGrocers(enforce: false),
+                                ];
+
+                                for (final step in steps) {
+                                  final ok = await step();
+                                  if (!ok) return; // an error snackbar was already shown
+                                }
+
                                 c.isEditing.value = false;
-                                Get.snackbar(
-                                  'Saved',
-                                  'Preferences updated successfully',
-                                );
+                                Get.snackbar('Saved', 'Preferences updated successfully');
                               },
                             ),
                           ],
@@ -372,9 +297,6 @@ class PreferencesScreen extends StatelessWidget {
 
 /// ======================================================================
 /// HEADER
-/// Dark status strip (#002C2E) + teal app bar (#33595B)
-/// View mode: back chevron + "Preferences" + "✎ Edit"
-/// Edit mode: back chevron + "Preferences" (no Edit chip)
 class _PreferencesHeader extends StatelessWidget {
   const _PreferencesHeader({
     required this.isEditing,
@@ -393,18 +315,12 @@ class _PreferencesHeader extends StatelessWidget {
 
     return Column(
       children: [
-        // Dark teal behind iOS/Android status bar
         Container(
           color: _tealStatus,
           width: double.infinity,
           padding: EdgeInsets.zero,
-          child: SafeArea(
-            bottom: false,
-            child: const SizedBox(height: 0), // we rely on OS status bar height
-          ),
+          child: SafeArea(bottom: false, child: const SizedBox(height: 0)),
         ),
-
-        // Main teal header
         Container(
           width: double.infinity,
           height: barHeight,
@@ -416,7 +332,6 @@ class _PreferencesHeader extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // back chevron
                 InkWell(
                   borderRadius: BorderRadius.circular(4),
                   onTap: onBack,
@@ -427,8 +342,6 @@ class _PreferencesHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                // title + (optional) Edit
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -443,28 +356,20 @@ class _PreferencesHeader extends StatelessWidget {
                           fontFamily: 'Roboto',
                         ),
                       ),
-
-                      // Edit chip only in view mode
                       if (!isEditing)
                         InkWell(
                           borderRadius: BorderRadius.circular(4),
                           onTap: onTapEdit,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 7,
-                            ),
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                             decoration: BoxDecoration(
                               color: _tealHeader,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
                               children: const [
-                                Icon(
-                                  Icons.edit,
-                                  size: 16,
-                                  color: Color(0xFFFEFEFE),
-                                ),
+                                Icon(Icons.edit, size: 16, color: Color(0xFFFEFEFE)),
                                 SizedBox(width: 4),
                                 Text(
                                   'Edit',
@@ -494,10 +399,8 @@ class _PreferencesHeader extends StatelessWidget {
 
 /// ======================================================================
 /// CARD WRAPPER
-/// Figma: white bg, radius 8, padding 16
 class _CardShell extends StatelessWidget {
   const _CardShell({required this.child});
-
   final Widget child;
 
   @override
@@ -513,8 +416,7 @@ class _CardShell extends StatelessWidget {
   }
 }
 
-/// Section title in every card
-/// 16 / 500 / #212121 / Roboto
+/// Section title
 class _CardTitle extends StatelessWidget {
   const _CardTitle(this.text);
   final String text;
@@ -536,8 +438,6 @@ class _CardTitle extends StatelessWidget {
 
 /// ======================================================================
 /// FAMILY SIZE VIEW MODE
-/// Each row: 36x36 icon tile (#E6EAEB bg, teal icon),
-/// label 14/500/#4D4D4D, then count 14/600/#212121
 class _FamilySizeViewBlock extends StatelessWidget {
   const _FamilySizeViewBlock({required this.controller});
   final PreferencesController controller;
@@ -546,23 +446,11 @@ class _FamilySizeViewBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _FamilyViewRow(
-          icon: Icons.group, // swap with exported Figma asset if you have it
-          label: 'Adults',
-          value: controller.adultCount.value,
-        ),
+        _FamilyViewRow(icon: Icons.group, label: 'Adults', value: controller.adultCount.value),
         const SizedBox(height: 12),
-        _FamilyViewRow(
-          icon: Icons.child_care,
-          label: 'Kids',
-          value: controller.kidCount.value,
-        ),
+        _FamilyViewRow(icon: Icons.child_care, label: 'Kids', value: controller.kidCount.value),
         const SizedBox(height: 12),
-        _FamilyViewRow(
-          icon: Icons.pets,
-          label: 'Pets',
-          value: controller.petCount.value,
-        ),
+        _FamilyViewRow(icon: Icons.pets, label: 'Pets', value: controller.petCount.value),
       ],
     );
   }
@@ -583,7 +471,6 @@ class _FamilyViewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // 36x36 icon tile
         Container(
           width: 36,
           height: 36,
@@ -592,15 +479,9 @@ class _FamilyViewRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            size: 20,
-            color: _tealHeader,
-          ),
+          child: Icon(icon, size: 20, color: _tealHeader),
         ),
         const SizedBox(width: 12),
-
-        // label
         Text(
           label,
           style: const TextStyle(
@@ -611,10 +492,7 @@ class _FamilyViewRow extends StatelessWidget {
             fontFamily: 'Roboto',
           ),
         ),
-
         const SizedBox(width: 8),
-
-        // count
         Text(
           value.toString(),
           style: const TextStyle(
@@ -632,8 +510,6 @@ class _FamilyViewRow extends StatelessWidget {
 
 /// ======================================================================
 /// FAMILY SIZE EDIT MODE
-/// Figma shows each row as a rounded 60px pill bg #F5F5F5,
-/// with "Adults" and then [-] (20x20 outline) count (+)
 class _FamilySizeEditBlock extends StatelessWidget {
   const _FamilySizeEditBlock({required this.controller});
   final PreferencesController controller;
@@ -707,17 +583,12 @@ class _FamilyEditPillRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // pill bg
-      decoration: BoxDecoration(
-        color: _chipBg,
-        borderRadius: BorderRadius.circular(60),
-      ),
+      decoration: BoxDecoration(color: _chipBg, borderRadius: BorderRadius.circular(60)),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Obx(
             () => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // label
             Text(
               label,
               style: const TextStyle(
@@ -725,11 +596,9 @@ class _FamilyEditPillRow extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 height: 1.44,
-                fontFamily: 'SF Pro Display', // matches plugin text block
+                fontFamily: 'SF Pro Display',
               ),
             ),
-
-            // counter cluster
             Row(
               children: [
                 _CircleStrokeBtn20(icon: Icons.remove, onTap: onMinus),
@@ -755,13 +624,8 @@ class _FamilyEditPillRow extends StatelessWidget {
   }
 }
 
-/// 20x20 circle outline button in teal
 class _CircleStrokeBtn20 extends StatelessWidget {
-  const _CircleStrokeBtn20({
-    required this.icon,
-    required this.onTap,
-  });
-
+  const _CircleStrokeBtn20({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback onTap;
 
@@ -775,26 +639,17 @@ class _CircleStrokeBtn20 extends StatelessWidget {
         height: 20,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(29),
-          border: Border.all(
-            color: _tealHeader,
-            width: 1,
-          ),
+          border: Border.all(color: _tealHeader, width: 1),
         ),
         alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 16,
-          color: _tealHeader,
-        ),
+        child: Icon(icon, size: 16, color: _tealHeader),
       ),
     );
   }
 }
 
 /// ======================================================================
-/// GENERIC CHIP RENDERING (dynamic, backed by controller options)
-/// - View mode: only selected chips are shown, all chips look like F5F5F5
-/// - Edit mode: ALL chips, selected get bg #D0DADC
+/// GENERIC CHIPS
 class _ChipsWrap extends StatelessWidget {
   const _ChipsWrap({
     super.key,
@@ -803,13 +658,17 @@ class _ChipsWrap extends StatelessWidget {
     required this.editable,
     required this.onTapChip,
     this.singleSelect = false,
+    this.labelResolver,
   });
 
-  final List<dynamic> options; // each option has .id and .label
+  final List<dynamic> options; // PrefOption
   final Set<int> selectedIds;
   final bool editable;
   final bool singleSelect;
   final void Function(dynamic opt) onTapChip;
+
+  /// Optional resolver to render label (e.g., pref.rangeText)
+  final String Function(dynamic opt)? labelResolver;
 
   @override
   Widget build(BuildContext context) {
@@ -823,7 +682,7 @@ class _ChipsWrap extends StatelessWidget {
       children: [
         for (final opt in visibleChips)
           _PrefChip(
-            label: opt.label ?? '',
+            label: labelResolver?.call(opt) ?? (opt.label ?? ''),
             selected: selectedIds.contains(opt.id),
             editable: editable,
             onTap: () => onTapChip(opt),
@@ -833,46 +692,6 @@ class _ChipsWrap extends StatelessWidget {
   }
 }
 
-/// Same visual chip but for static data (restrictions, etc.) where
-/// we don't have controller objects yet.
-class _StaticChipWrap extends StatelessWidget {
-  const _StaticChipWrap({
-    required this.chips,
-    required this.editable,
-  });
-
-  final List<_StaticChipData> chips;
-  final bool editable;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final chip in chips)
-          _PrefChip(
-            label: chip.label,
-            selected: chip.selected,
-            editable: editable,
-            onTap: () {
-              // not wired yet
-            },
-          ),
-      ],
-    );
-  }
-}
-
-class _StaticChipData {
-  final String label;
-  final bool selected;
-  const _StaticChipData(this.label, {this.selected = false});
-}
-
-/// Pill chip (radius 60, padding horiz 16 vert 10)
-/// - bg F5F5F5 normally
-/// - bg D0DADC if (editable && selected)
 class _PrefChip extends StatelessWidget {
   const _PrefChip({
     required this.label,
@@ -888,18 +707,14 @@ class _PrefChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bgColor =
-    (editable && selected) ? _chipSelectedBg : _chipBg;
+    final Color bgColor = (editable && selected) ? _chipSelectedBg : _chipBg;
 
     return InkWell(
       borderRadius: BorderRadius.circular(60),
       onTap: editable ? onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(60),
-        ),
+        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(60)),
         child: Text(
           label,
           style: const TextStyle(
@@ -916,9 +731,7 @@ class _PrefChip extends StatelessWidget {
 }
 
 /// ======================================================================
-/// SAVE BUTTON (edit mode only)
-/// Figma: full-width pill, height 56, radius 100, bg #33595B, text
-/// white 16/600 centered
+/// SAVE BUTTON
 class _SaveButtonPill extends StatelessWidget {
   const _SaveButtonPill({required this.onSave});
   final Future<void> Function() onSave;
@@ -949,52 +762,5 @@ class _SaveButtonPill extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-class _ComfortLevelWrap extends StatelessWidget {
-  const _ComfortLevelWrap({
-    required this.controller,
-    required this.editable,
-  });
-
-  final PreferencesController controller;
-  final bool editable;
-
-  static const _options = <String>[
-    'Beginner',
-    'Intermediate',
-    'Advanced',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    // In view mode: show only the chosen chip.
-    // In edit mode: show all three.
-    return Obx(() {
-      final current = controller.comfortLevel.value;
-
-      final visibleLabels = editable
-          ? _options
-          : _options.where((label) => label == current).toList();
-
-      return Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final label in visibleLabels)
-            _PrefChip(
-              label: label,
-              selected: label == current,
-              editable: editable,
-              onTap: editable
-                  ? () {
-                controller.comfortLevel.value = label;
-                controller.submitComfortLevel();
-              }
-                  : () {},
-            ),
-        ],
-      );
-    });
   }
 }

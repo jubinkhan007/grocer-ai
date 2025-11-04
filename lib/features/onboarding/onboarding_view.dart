@@ -55,6 +55,9 @@ class OnboardingView extends GetView<OnboardingController> {
 }
 
 /// This builds ONE slide exactly like the plugin layout
+/// This builds ONE slide exactly like the plugin layout,
+/// but makes it fully responsive by drawing the 430×932 artboard
+/// inside a FittedBox(BoxFit.contain).
 class _OnboardingSlideScreen extends StatelessWidget {
   const _OnboardingSlideScreen({
     required this.page,
@@ -72,21 +75,16 @@ class _OnboardingSlideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
-    // Figma frame is 430 x 932. We'll scale positions so it's proportional
-    // on other screens, but preserve pixel intent.
+    // Fixed Figma artboard
     const figmaW = 430.0;
     const figmaH = 932.0;
-    final scaleW = size.width / figmaW;
-    final scaleH = size.height / figmaH;
 
     // Token styles from plugin dump
     const titleStyle = TextStyle(
       color: _titleColor,
       fontSize: 24,
-      fontWeight: FontWeight.w600, // Figma said 600
-      height: 1.2, // tighter like plugin, not too tall
+      fontWeight: FontWeight.w600,
+      height: 1.2,
       fontFamily: 'Roboto',
     );
 
@@ -94,160 +92,128 @@ class _OnboardingSlideScreen extends StatelessWidget {
       color: _bodyColor,
       fontSize: 14,
       fontWeight: FontWeight.w400,
-      height: 1.70, // plugin showed 1.70
+      height: 1.70,
       fontFamily: 'Roboto',
     );
 
-    return Container(
-      width: size.width,
-      height: size.height,
-      color: _screenBg,
-      //clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          /// ===== big soft oval background behind hero art =====
-          Positioned(
-            left: -135 * scaleW,
-            top: -80 * scaleH,
-            child: Container(
-              width: 700 * scaleW,
-              height: 700 * scaleW, // keep it round-ish
-              decoration: const ShapeDecoration(
-                color: _bgOval,
-                shape: OvalBorder(),
-              ),
-            ),
-          ),
-
-          /// ===== dark status bar strip (48px tall in plugin) =====
-          Positioned(
-            left: 0,
-            top: 0,
-            width: size.width,
-            height: 48 * scaleH,
-            child: Container(
-              color: _statusBarBg,
-              // We won't try to pixel-copy carrier/wifi/battery, we just
-              // render the bar. If you want fake status text: uncomment.
-              // child: Padding(
-              //   padding: EdgeInsets.only(
-              //     left: 24.5 * scaleW,
-              //     top: 15.32 * scaleH,
-              //   ),
-              //   child: Text(
-              //     '9:41',
-              //     style: TextStyle(
-              //       color: const Color(0xFFE9E9E9),
-              //       fontSize: 16.41 * scaleW,
-              //       fontWeight: FontWeight.w600,
-              //       letterSpacing: -0.18 * scaleW,
-              //       fontFamily: 'SF Pro Text',
-              //     ),
-              //   ),
-              // ),
-            ),
-          ),
-
-          /// ===== "SKIP >" row in dark text, below status bar =====
-          Positioned(
-            left: 356 * scaleW,
-            top: 72 * scaleH,
-            child: InkWell(
-              onTap: onSkip,
-              borderRadius: BorderRadius.circular(4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'SKIP',
-                    style: TextStyle(
-                      color: Color(0xFF212121),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  SizedBox(width: 4 * scaleW),
-                  // simple chevron_right
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: Color(0xFF212121),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          /// ===== HERO ILLUSTRATION BLOCK =====
-          /// In the plugin we saw:
-          /// Positioned left:56, top:116, width:319, height:400
-          /// It's basically the artwork area.
-          Positioned(
-            left: 56 * scaleW,
-            top: 116 * scaleH,
-            width: 319 * scaleW,
-            height: 400 * scaleH,
-            child: Center(
-              child: Image.asset(
-                page.image,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-
-          /// ===== TEXT + PROGRESS + NEXT cluster near bottom =====
-          /// Plugin puts this whole column starting at top:696 left:24 width:382
-          Positioned(
-            left: 24 * scaleW,
-            // If the device is taller than 932, push it down proportionally.
-            // This matches Figma baseline but still sits ~above home bar.
-            top: 696 * scaleH,
-            width: 382 * scaleW,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    return ColoredBox(
+      color: _screenBg, // keeps page background around the letterboxed art
+      child: Center(
+        // Scales the whole 430×932 stage to always fit (no cropping)
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: SizedBox(
+            width: figmaW,
+            height: figmaH,
+            child: Stack(
               children: [
-                // Title + subtitle
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: Text(
-                        page.title,
-                        textAlign: TextAlign.center,
-                        style: titleStyle,
+                /// ===== big soft oval background behind hero art =====
+                const Positioned(
+                  left: -135,
+                  top: -80,
+                  child: SizedBox(
+                    width: 700,
+                    height: 700,
+                    child: DecoratedBox(
+                      decoration: ShapeDecoration(
+                        color: _bgOval,
+                        shape: OvalBorder(),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Text(
-                        page.subtitle,
-                        textAlign: TextAlign.center,
-                        style: bodyStyle,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
 
-                const SizedBox(height: 64),
+                /// ===== dark status bar strip (48px tall in plugin) =====
+                const Positioned(
+                  left: 0,
+                  top: 0,
+                  width: figmaW,
+                  height: 48,
+                  child: ColoredBox(color: _statusBarBg),
+                ),
 
-                // Bottom row: progress indicator + "Next" button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _PluginProgressDots(
-                      total: totalPages,
-                      current: pageIndex,
+                /// ===== "SKIP >" =====
+                Positioned(
+                  left: 356,
+                  top: 72,
+                  child: InkWell(
+                    onTap: onSkip,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'SKIP',
+                          style: TextStyle(
+                            color: Color(0xFF212121),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded,
+                            size: 18, color: Color(0xFF212121)),
+                      ],
                     ),
-                    _PluginNextButton(onTap: onNext),
-                  ],
+                  ),
+                ),
+
+                /// ===== HERO ILLUSTRATION BLOCK =====
+                Positioned(
+                  left: 56,
+                  top: 116,
+                  width: 319,
+                  height: 400,
+                  child: Center(
+                    child: Image.asset(
+                      page.image,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+
+                /// ===== TEXT + PROGRESS + NEXT cluster =====
+                Positioned(
+                  left: 24,
+                  top: 696,
+                  width: 382,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Title + subtitle
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: double.infinity),
+                          Text(page.title,
+                              textAlign: TextAlign.center, style: titleStyle),
+                          const SizedBox(height: 16),
+                          Text(page.subtitle,
+                              textAlign: TextAlign.center, style: bodyStyle),
+                        ],
+                      ),
+
+                      const SizedBox(height: 64),
+
+                      // Bottom row: progress indicator + "Next" button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _PluginProgressDots(
+                            total: totalPages,
+                            current: pageIndex,
+                          ),
+                          _PluginNextButton(onTap: onNext),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

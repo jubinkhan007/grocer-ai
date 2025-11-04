@@ -25,38 +25,22 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double statusH = MediaQuery.of(context).padding.top; // show the darker strip like Figma
+
     return Scaffold(
       backgroundColor: AppColors.bg, // #F4F6F6
       body: CustomScrollView(
         slivers: [
+          /// Figma status bar strip (#002C2E)
+          SliverToBoxAdapter(
+            child: Container(height: statusH, color: const Color(0xFF002C2E)),
+          ),
+
           /// Top bar (teal) exactly like figma
-          SliverAppBar(
-            automaticallyImplyLeading: false,
+          SliverPersistentHeader(
             pinned: true,
-            elevation: 0,
-            backgroundColor: AppColors.teal,
-            collapsedHeight: 72,
-            titleSpacing: 0,
-            title: Container(
-              color: AppColors.teal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: const [
-                    BackButton(color: Colors.white),
-                    SizedBox(width: 4),
-                    Text(
-                      'Order details',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20, // figma title 20
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            delegate: _FigmaTealHeader(
+              height: 64, // header block height under the status strip (Figma ≈ 64)
             ),
           ),
 
@@ -64,17 +48,14 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
           SliverToBoxAdapter(
             child: Padding(
               // Figma blocks sit at 24 horizontal spacing
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// Order ID / Order date
-                  Row(
-                    children: const [
-                      Expanded(child: _KV(label: 'Order ID:', value: '#5677654')),
-                      Expanded(child: _KV(label: 'Order date:', value: '25 Dec 2024', alignEnd: true)),
-                    ],
-                  ),
+                  /// Order ID / Order date (stacked, not side-by-side)
+                  const _KVRow(label: 'Order ID:', value: '#5677654'),
+                  const SizedBox(height: 10),
+                  const _KVRow(label: 'Order date:', value: '25 Dec 2024'),
                   const SizedBox(height: 24),
 
                   /// Walmart card (radius 8, paddings 16/12, exact typography)
@@ -105,11 +86,12 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
                           ),
                           const SizedBox(width: 16),
 
-                          /// Title + badge
+                          /// Title + badge + divider + price/items
                           Expanded(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
+                                /// left text
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,26 +113,22 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
                                         ),
                                         child: const Text(
                                           'Completed',
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            color: Color(0xFF3E8D5E),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w400,
-                                          ),
+                                              color: Color(0xFF3E8D5E),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w400),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
 
-                                /// Vertical divider (39 height)
-                                Container(
-                                  width: 1,
-                                  height: 39,
-                                  color: const Color(0xFFDEE0E0),
-                                ),
+                                /// vertical divider (39 height)
+                                Container(width: 1, height: 39, color: const Color(0xFFDEE0E0)),
                                 const SizedBox(width: 16),
 
-                                /// Prices + items
+                                /// right price column
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: const [
@@ -227,6 +205,8 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
                       ],
                     ),
                   ),
+
+                  // leave breathing room above the bottom button
                   const SizedBox(height: 120),
                 ],
               ),
@@ -245,13 +225,7 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // GetX (your project already uses Get)
                 Get.to(() => const NewOrderScreen(), binding: NewOrderBinding());
-
-                // If you prefer Navigator instead, use this and remove the Get line:
-                // Navigator.of(context).push(
-                //   MaterialPageRoute(builder: (_) => const NewOrderScreen()),
-                // );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF33595B),
@@ -259,11 +233,8 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                 elevation: 0,
               ),
-              child: const Text(
-                'Reorder',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            )
+              child: const Text('Reorder', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
           ),
         ),
       ),
@@ -273,18 +244,16 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
 
 /// ===== Helpers that mirror figma text sizes/weights =====
 
-class _KV extends StatelessWidget {
-  const _KV({required this.label, required this.value, this.alignEnd = false});
+class _KVRow extends StatelessWidget {
+  const _KVRow({required this.label, required this.value});
   final String label;
   final String value;
-  final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const SizedBox(height: 0),
         Text(
           label,
           style: const TextStyle(
@@ -293,7 +262,6 @@ class _KV extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
@@ -407,25 +375,11 @@ class _SumRow extends StatelessWidget {
         ),
         Row(
           children: [
-            Text(
-              sign,
-              style: TextStyle(
-                color: signColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(sign, style: TextStyle(color: signColor, fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(width: 16),
-            Text(
-              amount,
-              style: TextStyle(
-                color: signColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(amount, style: TextStyle(color: signColor, fontSize: 16, fontWeight: FontWeight.w500)),
           ],
-        )
+        ),
       ],
     );
   }
@@ -449,7 +403,7 @@ class _TotalRow extends StatelessWidget {
           ),
         ),
         Text(
-          ' \$540',
+          '\$540',
           style: TextStyle(
             color: Color(0xFF212121),
             fontSize: 16,
@@ -459,4 +413,54 @@ class _TotalRow extends StatelessWidget {
       ],
     );
   }
+}
+class _FigmaTealHeader extends SliverPersistentHeaderDelegate {
+  _FigmaTealHeader({required this.height});
+  final double height;
+
+  @override
+  double get minExtent => height;
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Semantics(
+      container: true,
+      header: true,
+      child: Material( // stable render object & semantics
+        color: const Color(0xFF33595B),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFFEFEFE), size: 20),
+                padding: EdgeInsets.zero,
+                // keep the visual at exactly 20×20 like Figma, no extra hit area
+                constraints: BoxConstraints.tight(Size(20, 20)),
+                tooltip: 'Back',
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Order details',
+                style: TextStyle(
+                  color: Color(0xFFFEFEFE),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Header never changes; avoid rebuilds during scroll/semantics.
+  @override
+  bool shouldRebuild(covariant _FigmaTealHeader oldDelegate) => false;
 }
