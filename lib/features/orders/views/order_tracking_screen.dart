@@ -60,7 +60,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             top: 0,
             child: Container(
               color: const Color(0xFF33595B),
-              padding: EdgeInsets.only(left: 24, right: 24, top: topInset, bottom: 20),
+              padding: EdgeInsets.only(left: 0, right: 0, top: topInset, bottom: 20),
               height: topInset + headerBodyHeight,
               child: Row(
                 children: [
@@ -73,7 +73,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     color: Colors.white,
                     icon: const Icon(Icons.arrow_back_ios_new_rounded),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 0),
                   const Text(
                     'Order tracking',
                     style: TextStyle(

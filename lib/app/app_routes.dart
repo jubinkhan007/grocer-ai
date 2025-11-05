@@ -25,6 +25,7 @@ import 'package:grocer_ai/features/auth/login/login_view.dart';
 import 'package:grocer_ai/features/auth/signup_bidning.dart';
 import 'package:grocer_ai/features/auth/signup_view.dart';
 
+import '../features/checkout/views/order_success_screen.dart';
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
 import '../features/orders/views/orders_screen.dart';
@@ -64,6 +65,7 @@ abstract class Routes {
   static const transactions = '/profile/transactions';
   static const livechat = '/profile/livechat';
   static const security = '/profile/security';
+  static const orderSuccess = '/checkout/success';
 }
 
 class AppPages {
@@ -167,6 +169,12 @@ class AppPages {
       name: Routes.security,
       page: () => SecurityScreen(),
       //binding: HomeBinding(),
+    ),
+
+    GetPage(
+      name: Routes.orderSuccess,
+      page: () => const CongratulationsScreen(),
+      // No binding needed for this static success page
     ),
   ];
 }

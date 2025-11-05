@@ -23,11 +23,13 @@ class PreferencesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.find<PreferencesController>();
 
+    // Set the system status bar color to match the app bar
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: _tealStatus,
+      statusBarColor: _tealHeader, // ⬅️ same teal
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
     ));
+
 
     return Scaffold(
       backgroundColor: _bgPage,
@@ -311,35 +313,32 @@ class _PreferencesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vPad = isEditing ? 20.0 : 14.0;
-    final barHeight = isEditing ? null : 63.0;
+    final barHeight = isEditing ? null : 54.0;
 
-    return Column(
-      children: [
-        Container(
-          color: _tealStatus,
-          width: double.infinity,
-          padding: EdgeInsets.zero,
-          child: SafeArea(bottom: false, child: const SizedBox(height: 0)),
-        ),
-        Container(
-          width: double.infinity,
-          height: barHeight,
-          color: _tealHeader,
-          padding: EdgeInsets.symmetric(horizontal: 24, vertical: vPad),
-          child: SafeArea(
-            top: false,
-            bottom: false,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: _tealHeader,          // ⬅️ same teal as header
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark, // iOS
+      ),
+      child: Container(
+        color: _tealHeader,                    // ⬅️ one continuous teal block
+        padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top) // covers status bar
+            .add(EdgeInsets.symmetric(horizontal: 12, vertical: vPad)),
+        child: SafeArea(
+          top: false, // we already added top padding
+          bottom: false,
+          child: SizedBox(
+            height: barHeight, // compact height when not editing
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 InkWell(
                   borderRadius: BorderRadius.circular(4),
                   onTap: onBack,
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: Color(0xFFFEFEFE),
-                  ),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 20, color: Color(0xFFFEFEFE)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -361,14 +360,14 @@ class _PreferencesHeader extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           onTap: onTapEdit,
                           child: Container(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 7),
                             decoration: BoxDecoration(
-                              color: _tealHeader,
+                              color: _tealHeader, // same teal
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Row(
-                              children: const [
+                            child: const Row(
+                              children: [
                                 Icon(Icons.edit, size: 16, color: Color(0xFFFEFEFE)),
                                 SizedBox(width: 4),
                                 Text(
@@ -392,7 +391,7 @@ class _PreferencesHeader extends StatelessWidget {
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

@@ -33,7 +33,7 @@ class ApiPath {
   static const notifications = '/api/v1/notifications/';
   static const dashboardPreferences = '/api/v1/profile/dashboard-preferences/';
   static const passwordChange = '/api/v1/auth/password-change/';
-
+  static const String profileLocations = '/api/v1/profile/locations/';
   static const products = '/api/v1/products/';
   // --- NEW ORDER PREFERENCES ---
   static const String orderPreferenceList = '/api/v1/order-preference-list/';
@@ -41,6 +41,21 @@ class ApiPath {
 
   // order-items
   static const relatedProducts = '/api/v1/related-products/';
+
+  // Order History
+  static const String orders = '/api/v1/orders/'; // GET, POST
+  static const String orderDetail = '/api/v1/orders/'; // /{id}/ GET, PUT, PATCH
+  static const String orderLastActive = '/api/v1/orders/last-active/'; // GET
+  static const String orderStatus = '/api/v1/order-status/'; // GET
+
+  // Checkout
+  static const String timeSlots = '/api/v1/time-slots/'; // GET
+  static const String paymentMethods = '/api/v1/payment-methods/'; // GET (Types)
+  static const String userPaymentMethods =
+      '/api/v1/user-payment-methods/'; // GET, POST (User's saved cards)
+  static const String userPaymentMethodDetail =
+      '/api/v1/user-payment-methods/'; // /{id}/ PUT, PATCH, DELETE
+  static const String orderPay = '/api/v1/order-pay/'; // POST
 
   // media upload
   static const String mediaUpload = '/api/v1/media/';

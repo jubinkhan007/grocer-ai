@@ -1,6 +1,7 @@
 // lib/features/orders/views/new_order_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/orders/controllers/new_order_controller.dart';
 import 'package:grocer_ai/features/orders/models/order_preference_model.dart';
@@ -17,7 +18,9 @@ class NewOrderScreen extends GetView<NewOrderController> {
   Widget build(BuildContext context) {
     // Get the shell controller to manage the bottom nav state
     final shellController = Get.find<MainShellController>();
-
+    final padTop = MediaQuery.of(context).padding.top;
+    const _teal = Color(0xFF33595B);
+    const _toolbar = 56.0;
     // Figma page background
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
@@ -27,67 +30,67 @@ class NewOrderScreen extends GetView<NewOrderController> {
             slivers: [
               // Header bar exactly like Figma (unchanged)
               SliverAppBar(
-                automaticallyImplyLeading: false,
                 pinned: true,
                 elevation: 0,
-                backgroundColor: const Color(0xFF33595B),
-                collapsedHeight: 88,
-                toolbarHeight: 88,
-                titleSpacing: 0,
-                title: Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  color: const Color(0xFF33595B),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Row(
-                      children: [
-                        const BackButton(color: Colors.white),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'New order',
-                          style: TextStyle(
-                            color: Color(0xFFFEFEFE),
-                            fontSize: 20,
-                            fontFamily: 'Roboto',
-                            fontWeight: FontWeight.w700,
+                backgroundColor: _teal,
+                systemOverlayStyle: SystemUiOverlayStyle.light,
+                // total height = status bar + 56 (Figma)
+                collapsedHeight: _toolbar,
+                expandedHeight:  _toolbar,
+                automaticallyImplyLeading: false,
+                flexibleSpace: Container(
+                  color: _teal,
+                  padding: EdgeInsets.only(top: padTop), // covers the notch only
+                  child: SizedBox(
+                    height: _toolbar,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                      child: Row(
+                        children: [
+                          const BackButton(color: Colors.white),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'New order',
+                            style: TextStyle(
+                              color: Color(0xFFFEFEFE),
+                              fontSize: 20,
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        // notification pill (unchanged)
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF33595B),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          alignment: Alignment.center,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              const Icon(Icons.notifications_none_rounded,
-                                  size: 20, color: Colors.white),
-                              Positioned(
-                                right: -1,
-                                top: -1,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFBA4012),
-                                    borderRadius: BorderRadius.circular(99),
-                                    border: Border.all(
-                                        color: const Color(0xFF33595B),
-                                        width: 1.5),
+                          const Spacer(),
+                          // notification pill (kept)
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _teal,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            alignment: Alignment.center,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.notifications_none_rounded,
+                                    size: 20, color: Colors.white),
+                                Positioned(
+                                  right: -1,
+                                  top: -1,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFBA4012),
+                                      borderRadius: BorderRadius.circular(99),
+                                      border: Border.all(color: _teal, width: 1.5),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

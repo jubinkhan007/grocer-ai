@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../ui/theme/app_theme.dart';
 import 'order_tracking_screen.dart';
@@ -23,48 +24,76 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final padTop = MediaQuery.of(context).padding.top;
+    const _teal = Color(0xFF33595B);
+    const _toolbar = 74.0;
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
       body: CustomScrollView(
         slivers: [
           /// ===== HEADER (exact like mock) =====
           SliverAppBar(
-            automaticallyImplyLeading: false,
             pinned: true,
             elevation: 0,
-            backgroundColor: const Color(0xFF33595B),
-            collapsedHeight: 88,            // <- exact
-            toolbarHeight: 88,              // <- exact
-            titleSpacing: 0,
-            title: Container(
-              color: const Color(0xFF33595B),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints:
-                      const BoxConstraints(minWidth: 40, minHeight: 40),
-                      onPressed: Get.back,
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xFFFEFEFE),
-                        size: 20,
+            backgroundColor: _teal,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+            // total height = status bar + 56 (Figma)
+            collapsedHeight: _toolbar,
+            expandedHeight:  _toolbar,
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
+              color: _teal,
+              padding: EdgeInsets.only(top: padTop), // covers the notch only
+              child: SizedBox(
+                height: _toolbar,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  child: Row(
+                    children: [
+                      const BackButton(color: Colors.white),
+                      const SizedBox(width: 0),
+                      const Text(
+                        'Order details',
+                        style: TextStyle(
+                          color: Color(0xFFFEFEFE),
+                          fontSize: 20,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Order details',
-                      style: TextStyle(
-                        color: Color(0xFFFEFEFE),
-                        fontSize: 20,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                      // const Spacer(),
+                      // // notification pill (kept)
+                      // Container(
+                      //   width: 32,
+                      //   height: 32,
+                      //   decoration: BoxDecoration(
+                      //     color: _teal,
+                      //     borderRadius: BorderRadius.circular(16),
+                      //   ),
+                      //   alignment: Alignment.center,
+                      //   child: Stack(
+                      //     clipBehavior: Clip.none,
+                      //     children: [
+                      //       const Icon(Icons.notifications_none_rounded,
+                      //           size: 20, color: Colors.white),
+                      //       Positioned(
+                      //         right: -1,
+                      //         top: -1,
+                      //         child: Container(
+                      //           width: 8,
+                      //           height: 8,
+                      //           decoration: BoxDecoration(
+                      //             color: const Color(0xFFBA4012),
+                      //             borderRadius: BorderRadius.circular(99),
+                      //             border: Border.all(color: _teal, width: 1.5),
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
+                    ],
+                  ),
                 ),
               ),
             ),

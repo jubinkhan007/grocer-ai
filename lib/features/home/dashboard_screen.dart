@@ -2,6 +2,7 @@
 import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/home/widgets/complete_preference_dialog.dart';
 
@@ -21,6 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final shell = Get.find<MainShellController>();
   @override
   Widget build(BuildContext context) {
+    final padTop = MediaQuery.of(context).padding.top;
     final w = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
@@ -224,15 +226,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light, // white status icons
+              child: Container(
+                height: padTop,
+                color: const Color(0xFF33595B), // teal
+              ),
+            ),
+          ),
 
           // Teal header 92
           Positioned(
-            top: 48,
+            top: padTop,
             left: 0,
             right: 0,
             child: Container(
               height: 92,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
               color: const Color(0xFF33595B),
               child: Center(
                 child: ConstrainedBox(
@@ -391,15 +405,21 @@ class _LastOrderCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    // left info
-                    SizedBox(
-                      width: 152,
+                    // left info — let it flex
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
-                          Text('Walmart',
-                              style: TextStyle(
-                                  color: Color(0xFF33595B), fontSize: 16, fontWeight: FontWeight.w600)),
+                          Text(
+                            'Walmart',
+                            style: TextStyle(
+                              color: Color(0xFF33595B),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           SizedBox(height: 4),
                           Wrap(
                             spacing: 8,
@@ -413,26 +433,29 @@ class _LastOrderCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // exact 1px hairline
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      width: 1,
-                      height: 39,
-                      color: const Color(0xFFDEE0E0),
-                    ),
-                    // right price
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: const [
-                        _Price(current: '\$400', old: '\$482'),
-                        SizedBox(height: 4),
-                        SizedBox(
-                          width: 77,
-                          child: Text('12 items',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(color: Color(0xFF4D4D4D), fontSize: 14)),
-                        ),
-                      ],
+
+                    // divider with breathing room
+                    const SizedBox(width: 16),
+                    Container(width: 1, height: 39, color: Color(0xFFDEE0E0)),
+                    const SizedBox(width: 16),
+
+                    // right side — cap its width to avoid overflow
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 100),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: const [
+                          _Price(current: '\$400', old: '\$482'),
+                          SizedBox(height: 4),
+                          Text(
+                            '12 items',
+                            textAlign: TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Color(0xFF4D4D4D), fontSize: 14),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

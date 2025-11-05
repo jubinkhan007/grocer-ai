@@ -33,9 +33,9 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Light status icons over dark teal strip.
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: _statusTeal,
-      statusBarIconBrightness: Brightness.light, // Android
-      statusBarBrightness: Brightness.dark, // iOS "light content"
+      statusBarColor: _headerTeal,  // Same teal color for the status bar
+      statusBarIconBrightness: Brightness.light,  // Ensure icons are white on teal
+      statusBarBrightness: Brightness.dark,  // iOS handling
     ));
 
     final media = MediaQuery.of(context);
@@ -229,7 +229,7 @@ class _ProfileHeader extends StatelessWidget {
           Positioned.fill(
             top: 0,
             bottom: 219 - 170, // leaves ~49px of space below teal
-            child: Container(color: _headerTeal),
+            child: Container(color: _headerTeal),  // Ensure this matches the status bar color
           ),
 
           // Avatar + name + email row (left-aligned, not centered)
@@ -247,8 +247,7 @@ class _ProfileHeader extends StatelessWidget {
                     // 72 x 72 circular avatar
                     ClipOval(
                       child: Image.asset(
-                        'assets/images/profile_avatar.png',
-                        // <-- put your real asset here
+                        'assets/images/profile_avatar.png',  // <-- put your real asset here
                         width: 72,
                         height: 72,
                         fit: BoxFit.cover,
@@ -267,7 +266,7 @@ class _ProfileHeader extends StatelessWidget {
                         child: const Icon(
                           Icons.photo_camera_outlined,
                           size: 16,
-                          color: _headerTeal,
+                          color: _headerTeal,  // same teal color for the camera badge
                         ),
                       ),
                     ),
@@ -412,7 +411,7 @@ class _ProfileHeader extends StatelessWidget {
                           child: Icon(
                             Icons.monetization_on,
                             size: 48,
-                            color: _headerTeal,
+                            color: _headerTeal, // make sure this matches
                           ),
                         ),
                       ),

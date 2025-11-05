@@ -2,6 +2,7 @@
 
 import 'package:dio/dio.dart'; // Import dio
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -19,6 +20,8 @@ class OfferScreen extends StatefulWidget {
   State<OfferScreen> createState() => _OfferScreenState();
 }
 
+const kTeal = Color(0xFF33595B);
+const kAppBarH = 92.0;
 class _OfferScreenState extends State<OfferScreen> {
   int _tab = 1; // (change to whatever your FFBottomNav index is for Offer)
 
@@ -122,6 +125,7 @@ class _OfferScreenState extends State<OfferScreen> {
       body: ColoredBox(
           color: const Color(0xFFF4F6F6),
           child: SafeArea(
+              top: false,
               bottom: false,
               child: Center(
                   child: ConstrainedBox(
@@ -129,48 +133,44 @@ class _OfferScreenState extends State<OfferScreen> {
                     child: CustomScrollView(
                       slivers: [
                         SliverAppBar(
-                          backgroundColor: const Color(0xFF33595B),
+                          backgroundColor: kTeal,
+                          surfaceTintColor: Colors.transparent,
+                          elevation: 0,
+                          scrolledUnderElevation: 0,
+                          shadowColor: Colors.transparent,
                           pinned: true,
-                          expandedHeight: 92, // header block height
-                          collapsedHeight: 92,
-                          titleSpacing: 0, // so 24 actually is 24
+
+                          // 👇 Compact heights
+                          toolbarHeight: kAppBarH,
+                          expandedHeight: kAppBarH,
+                          collapsedHeight: kAppBarH,
+
+                          titleSpacing: 0,
+                          systemOverlayStyle: const SystemUiOverlayStyle(
+                            statusBarColor: kTeal,
+                            statusBarIconBrightness: Brightness.light,
+                            statusBarBrightness: Brightness.dark, // iOS
+                          ),
                           title: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), // was 16
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center, // keep text vertically centered
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: const [
-                                      // "Hi, Joshep" (from plugin: 18 regular + 18 bold)
                                       Text.rich(TextSpan(children: [
-                                        TextSpan(
-                                            text: 'Hi,',
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w400,
-                                                color: Color(0xFFFEFEFE))),
+                                        TextSpan(text: 'Hi,', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: Color(0xFFFEFEFE))),
                                         TextSpan(text: ' '),
-                                        TextSpan(
-                                            text: 'Joshep',
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w700,
-                                                color: Color(0xFFFEFEFE))),
+                                        TextSpan(text: 'Joshep', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFFEFEFE))),
                                       ])),
-                                      SizedBox(height: 6),
+                                      SizedBox(height: 4), // tighter
                                       Row(
                                         children: [
-                                          Icon(Icons.location_on_outlined,
-                                              size: 20,
-                                              color: Color(0xFFE9E9E9)),
-                                          SizedBox(width: 8),
-                                          Text('Savar, Dhaka',
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Color(0xFFE9E9E9))),
+                                          Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFE9E9E9)),
+                                          SizedBox(width: 6),
+                                          Text('Savar, Dhaka', style: TextStyle(fontSize: 13, color: Color(0xFFE9E9E9))),
                                         ],
                                       ),
                                     ],
@@ -182,9 +182,7 @@ class _OfferScreenState extends State<OfferScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     onPressed: () {},
-                                    icon: const Icon(
-                                        Icons.notifications_none_rounded,
-                                        color: Colors.white),
+                                    icon: Icon(Icons.notifications_none_rounded, color: Colors.white),
                                   ),
                                 ),
                               ],

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/orders/views/past_order_details_screen.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
 import '../widgets/orders_widgets.dart';
 import 'order_details_screen.dart';
-
+const kTeal = Color(0xFF33595B);
 class OrderScreen extends StatefulWidget {
   const OrderScreen({super.key});
 
@@ -57,6 +58,16 @@ class _OrderScreenState extends State<OrderScreen> {
   Widget build(BuildContext context) {
     // Figma: Status bar ~48 + title block 69 => ~117
     const double headerHeight = 117;
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: kTeal,                    // 👈 exact same teal
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,     // for iOS
+        systemNavigationBarColor: Colors.white,   // optional
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6), // Figma bg
@@ -64,12 +75,14 @@ class _OrderScreenState extends State<OrderScreen> {
         slivers: [
           // status bar strip (dark like Figma)
           SliverToBoxAdapter(
-            child: Container(
-              height: MediaQuery.of(context).padding.top,
-              color: const Color(0xFF002C2E),
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light, // white status icons
+              child: Container(
+                height: MediaQuery.of(context).padding.top,
+                color: kTeal,
+              ),
             ),
           ),
-
 // compact pinned header (64 px under the status bar)
           SliverPersistentHeader(
             pinned: true,
@@ -289,37 +302,40 @@ class _OrderHeader extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Material(
-      color: const Color(0xFF33595B),
-      child: Padding(
-        // Figma: 24 horizontal, 12 vertical (visually gives ~64 height)
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints.tight(Size(20, 20)),
-            ),
-            const SizedBox(width: 8),
-            const SizedBox(width: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFFFEFEFE),
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                height: 1.0,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Material(
+        color: kTeal,
+        surfaceTintColor: Colors.transparent, // 👈 prevent shade shift
+        elevation: 0,                          // 👈 no overlay-by-elevation
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints.tight(Size(20, 20)),
               ),
-            ),
-            const Spacer(),
-            if (showRange)
-              _RangeDropdownButton(
-                text: rangeText,
-                onSelected: onPickRange,
+              const SizedBox(width: 0),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFFFEFEFE),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  height: 1.0,
+                ),
               ),
-          ],
+              const Spacer(),
+              if (showRange)
+                _RangeDropdownButton(
+                  text: rangeText,
+                  onSelected: onPickRange,
+                ),
+            ],
+          ),
         ),
       ),
     );

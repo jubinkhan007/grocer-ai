@@ -11,11 +11,17 @@ class HelpSupportScreen extends StatelessWidget {
     Get.snackbar('Live chat', 'Hook me up to your live chat when ready.');
   }
 
+
+
+
+
   @override
   Widget build(BuildContext context) {
     const _bg = Color(0xFFF4F6F6);
     const _teal = Color(0xFF33595B);
     const _divider = Color(0xFFE0E0E0);
+    final padTop = MediaQuery.of(context).padding.top;
+    const _toolbar = 63.0;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -28,18 +34,22 @@ class HelpSupportScreen extends StatelessWidget {
             pinned: true,
             elevation: 0,
             backgroundColor: _teal,
-            collapsedHeight: 116,
-            expandedHeight: 116,
-            titleSpacing: 0,
-            title: Container(
+
+            // total height = status bar + 56 (matches standard Figma toolbars)
+            collapsedHeight:  _toolbar,
+            expandedHeight: _toolbar,
+
+            automaticallyImplyLeading: false,
+            flexibleSpace: Container(
               color: _teal,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: SafeArea(
-                bottom: false,
+              padding: EdgeInsets.only(top: padTop), // only cover the notch area
+              child: SizedBox(
+                height: _toolbar,
                 child: Row(
                   children: const [
-                    _BackChevron(),
-                    SizedBox(width: 8),
+                    SizedBox(width: 0),
+                    _BackChevron(), // 20px icon already sized correctly
+                    SizedBox(width: 0),
                     Text(
                       'Help & Support',
                       style: TextStyle(

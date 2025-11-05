@@ -416,8 +416,8 @@ class _SocialBtn extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(32),
       child: Ink(
-        width: 64,
-        height: 64,
+        width: 43.38,
+        height: 43.38,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,

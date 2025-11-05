@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/orders/views/store_order_screen.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -26,6 +27,7 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final double statusH = MediaQuery.of(context).padding.top; // show the darker strip like Figma
+    final padTop = MediaQuery.of(context).padding.top; // device notch/status height
 
     return Scaffold(
       backgroundColor: AppColors.bg, // #F4F6F6
@@ -33,14 +35,21 @@ class _PastOrderDetailsScreenState extends State<PastOrderDetailsScreen> {
         slivers: [
           /// Figma status bar strip (#002C2E)
           SliverToBoxAdapter(
-            child: Container(height: statusH, color: const Color(0xFF002C2E)),
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light, // white status icons
+              child: Container(
+                height: statusH,
+                color: const Color(0xFF33595B), // same teal as app bar
+              ),
+            ),
           ),
-
           /// Top bar (teal) exactly like figma
+
           SliverPersistentHeader(
             pinned: true,
             delegate: _FigmaTealHeader(
-              height: 64, // header block height under the status strip (Figma ≈ 64)
+              padTop: 0,          // <-- was MediaQuery.of(context).padding.top
+              toolbarHeight: 74,  // keep Figma toolbar height
             ),
           ),
 
@@ -415,52 +424,64 @@ class _TotalRow extends StatelessWidget {
   }
 }
 class _FigmaTealHeader extends SliverPersistentHeaderDelegate {
-  _FigmaTealHeader({required this.height});
-  final double height;
+  _FigmaTealHeader({
+    required this.padTop,
+    required this.toolbarHeight,
+  });
+
+  final double padTop;          // from MediaQuery
+  final double toolbarHeight;   // 56
+
+  static const _teal = Color(0xFF33595B);
 
   @override
-  double get minExtent => height;
+  double get minExtent => padTop + toolbarHeight;
   @override
-  double get maxExtent => height;
+  double get maxExtent => padTop + toolbarHeight;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Semantics(
-      container: true,
-      header: true,
-      child: Material( // stable render object & semantics
-        color: const Color(0xFF33595B),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // white status icons on teal
+      child: Material(
+        color: _teal,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFFEFEFE), size: 20),
-                padding: EdgeInsets.zero,
-                // keep the visual at exactly 20×20 like Figma, no extra hit area
-                constraints: BoxConstraints.tight(Size(20, 20)),
-                tooltip: 'Back',
+          // top padding covers the status area; the visible toolbar remains 56
+          padding: EdgeInsets.only(top: padTop),
+          child: SizedBox(
+            height: toolbarHeight,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFFFEFEFE), size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    tooltip: 'Back',
+                  ),
+                  const SizedBox(width: 0),
+                  const Text(
+                    'Order details',
+                    style: TextStyle(
+                      color: Color(0xFFFEFEFE),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              const Text(
-                'Order details',
-                style: TextStyle(
-                  color: Color(0xFFFEFEFE),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  height: 1.0,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Header never changes; avoid rebuilds during scroll/semantics.
   @override
-  bool shouldRebuild(covariant _FigmaTealHeader oldDelegate) => false;
+  bool shouldRebuild(covariant _FigmaTealHeader old) =>
+      old.padTop != padTop || old.toolbarHeight != toolbarHeight;
 }
