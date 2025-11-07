@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // From your Figma (teal/dark header + neutrals)
-  static const teal = Color(0xFF0E5F5A);
+  static const teal = Color(0xFF33595B);
   static const tealDark = Color(0xFF0B4A46);
   static const bg = Color(0xFFF6F7F8);
   static const card = Colors.white;

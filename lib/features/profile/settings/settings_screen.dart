@@ -4,12 +4,16 @@ import 'package:get/get.dart';
 
 import '../../../shell/main_shell_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../models/personal_info_model.dart';
+import '../models/wallet_model.dart';
 import '../security/views/security_screen.dart';
+import '../static_pages/static_page_binding.dart';
 import '../views/about_us_screen.dart';
 import '../views/dashboard_preference_sheet.dart';
 import '../views/logout_dialog.dart';
 import '../views/personal_info_sheet.dart';
 import '../views/terms_conditions_screen.dart';
+import '../wallet/wallet_controller.dart';
 
 /// ===== FIGMA TOKENS =========================================================
 
@@ -39,6 +43,14 @@ class SettingsScreen extends StatelessWidget {
     ));
 
     final media = MediaQuery.of(context);
+    // --- 7. ADD Get.find() CALLS HERE ---
+    final shell = Get.find<MainShellController>();
+    final profileController = Get.find<ProfileController>();
+    final walletController = Get.find<WalletController>();
+
+    // Load data when the screen is built
+    profileController.loadPersonalInfo();
+    walletController.loadWallet();
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -56,7 +68,13 @@ class SettingsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header block (teal + avatar/name/email + credit card)
-                  const _ProfileHeader(),
+                  Obx(() {
+                    return _ProfileHeader(
+                      // Pass dynamic data down
+                      info: profileController.personalInfo.value,
+                      wallet: walletController.wallet.value,
+                    );
+                  }),
 
                   // Figma math:
                   // header stack ends visually at y=267,
@@ -115,7 +133,6 @@ class SettingsScreen extends StatelessWidget {
                           label: 'Transaction',
                           leading: Icons.sync_alt_rounded,
                           onTap: () {
-                            final shell = Get.find<MainShellController>();
                             shell.openTransactions();
                           },
                         ),
@@ -134,14 +151,23 @@ class SettingsScreen extends StatelessWidget {
                         _SettingsTile(
                           label: 'About Us',
                           leading: Icons.info_outline,
-                          onTap: () => Get.to(() => const AboutUsScreen()),
+                          // --- MODIFIED: Use StaticPageBinding ---
+                          onTap: () => Get.to(
+                                () => const AboutUsScreen(),
+                            binding:
+                            StaticPageBinding(pageType: 'about_us'),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _SettingsTile(
                           label: 'Terms & Conditions',
                           leading: Icons.description_outlined,
-                          onTap: () =>
-                              Get.to(() => const TermsConditionsScreen()),
+                          // --- MODIFIED: Use StaticPageBinding ---
+                          onTap: () => Get.to(
+                                () => const TermsConditionsScreen(),
+                            binding: StaticPageBinding(
+                                pageType: 'terms_conditions'),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _SettingsTile(
@@ -215,24 +241,29 @@ class _StatusStrip extends StatelessWidget {
 ///   "Total credit" / "$189", arrow chip on the right,
 ///   faint watermark coin.
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  final PersonalInfo? info;
+  final Wallet? wallet;
+  const _ProfileHeader({this.info, this.wallet});
 
   @override
   Widget build(BuildContext context) {
+    // Use dynamic data with fallbacks
+    final String name = info?.name ?? 'GrocerAI User';
+    final String email = info?.email ?? '...';
+    // Use usableBalance as it's the one for spending
+    final String credit = wallet?.usableBalance ?? '...';
+
     return SizedBox(
-      height: 219, // exactly from Figma export
+      height: 219,
       width: double.infinity,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // teal background block height 170
           Positioned.fill(
             top: 0,
-            bottom: 219 - 170, // leaves ~49px of space below teal
-            child: Container(color: _headerTeal),  // Ensure this matches the status bar color
+            bottom: 219 - 170,
+            child: Container(color: _headerTeal),
           ),
-
-          // Avatar + name + email row (left-aligned, not centered)
           Positioned(
             left: 24,
             right: 24,
@@ -240,20 +271,17 @@ class _ProfileHeader extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar with camera badge overlay
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // 72 x 72 circular avatar
                     ClipOval(
                       child: Image.asset(
-                        'assets/images/profile_avatar.png',  // <-- put your real asset here
+                        'assets/images/profile_avatar.png',
                         width: 72,
                         height: 72,
                         fit: BoxFit.cover,
                       ),
                     ),
-                    // Camera badge at bottom-right corner of avatar
                     Positioned(
                       right: -3,
                       bottom: -3,
@@ -266,22 +294,20 @@ class _ProfileHeader extends StatelessWidget {
                         child: const Icon(
                           Icons.photo_camera_outlined,
                           size: 16,
-                          color: _headerTeal,  // same teal color for the camera badge
+                          color: _headerTeal,
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(width: 12),
-
-                // Text column
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        'Michael Anderson',
-                        style: TextStyle(
+                        name, // <-- DYNAMIC NAME
+                        style: const TextStyle(
                           color: _textOnTealPrimary,
                           fontSize: 20,
                           fontFamily: 'Roboto',
@@ -289,10 +315,10 @@ class _ProfileHeader extends StatelessWidget {
                           height: 1.3,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'm.anderson@gmail.com',
-                        style: TextStyle(
+                        email, // <-- DYNAMIC EMAIL
+                        style: const TextStyle(
                           color: _textOnTealSecondary,
                           fontSize: 16,
                           fontFamily: 'Roboto',
@@ -306,8 +332,6 @@ class _ProfileHeader extends StatelessWidget {
               ],
             ),
           ),
-
-          // CREDIT CARD TILE
           Positioned(
             left: 24,
             right: 24,
@@ -328,7 +352,6 @@ class _ProfileHeader extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // 48x48 "coin" placeholder (yellow $ icon from Figma)
                       SizedBox(
                         width: 48,
                         height: 48,
@@ -336,18 +359,16 @@ class _ProfileHeader extends StatelessWidget {
                           child: Icon(
                             Icons.attach_money,
                             size: 32,
-                            color: const Color(0xFFFFC107), // gold-ish
+                            color: const Color(0xFFFFC107),
                           ),
                         ),
                       ),
                       const SizedBox(width: 16),
-
-                      // "Total credit" + "$189"
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'Total credit',
                               style: TextStyle(
                                 color: _textSecondary,
@@ -357,10 +378,10 @@ class _ProfileHeader extends StatelessWidget {
                                 height: 1.3,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              '\$189',
-                              style: TextStyle(
+                              '\$$credit', // <-- DYNAMIC CREDIT
+                              style: const TextStyle(
                                 color: _textPrimary,
                                 fontSize: 18,
                                 fontFamily: 'Roboto',
@@ -371,10 +392,7 @@ class _ProfileHeader extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       const SizedBox(width: 16),
-
-                      // Grey round arrow chip (30x30, radius 15)
                       Container(
                         width: 30,
                         height: 30,
@@ -391,15 +409,13 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-
-                  // faint watermark coin (opacity 0.04, rotated)
                   Positioned(
                     left: 189,
                     top: 35,
                     child: Opacity(
                       opacity: 0.04,
                       child: Transform.rotate(
-                        angle: -0.70, // ~-40°
+                        angle: -0.70,
                         child: Container(
                           width: 72,
                           height: 72,
@@ -411,7 +427,7 @@ class _ProfileHeader extends StatelessWidget {
                           child: Icon(
                             Icons.monetization_on,
                             size: 48,
-                            color: _headerTeal, // make sure this matches
+                            color: _headerTeal,
                           ),
                         ),
                       ),

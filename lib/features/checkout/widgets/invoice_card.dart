@@ -1,9 +1,22 @@
+// lib/features/checkout/widgets/invoice_card.dart
 import 'package:flutter/material.dart';
 import '../widgets/card_shell.dart' as card;
 import '../utils/design_tokens.dart';
 
 class InvoiceCard extends StatelessWidget {
-  const InvoiceCard({super.key});
+  final double orderValue;
+  final double redeemedValue;
+  final double dueToday;
+  final double total;
+
+  const InvoiceCard({
+    super.key,
+    // MODIFIED: Make fields optional to avoid breaking old static version
+    this.orderValue = 0.0,
+    this.redeemedValue = 0.0,
+    this.dueToday = 0.0,
+    this.total = 0.0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,22 +64,23 @@ class InvoiceCard extends StatelessWidget {
           const _SectionTitleText('Checkout invoice'),
           const SizedBox(height: 16),
 
-          row('Order value', '\$189'),
+          // --- MODIFIED: Dynamic values ---
+          row('Order value', '\$${orderValue.toStringAsFixed(2)}'),
           const SizedBox(height: 12),
 
-          row('Redeemed from balance', '\$15',
+          row('Redeemed from balance', '\$${redeemedValue.toStringAsFixed(2)}',
               valueColor: errorRed, negative: true),
           const SizedBox(height: 12),
 
-          row('Due today', '\$174'),
+          row('Due today', '\$${dueToday.toStringAsFixed(2)}'),
           const SizedBox(height: 12),
 
           Container(height: 1, color: borderHairline),
           const SizedBox(height: 12),
 
           Row(
-            children: const [
-              Expanded(
+            children: [
+              const Expanded(
                 child: Text(
                   'Total',
                   style: TextStyle(
@@ -79,8 +93,8 @@ class InvoiceCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '\$540',
-                style: TextStyle(
+                '\$${total.toStringAsFixed(2)}', // <-- MODIFIED
+                style: const TextStyle(
                   color: textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

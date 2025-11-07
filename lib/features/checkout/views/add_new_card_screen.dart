@@ -1,52 +1,26 @@
+// lib/features/checkout/views/add_new_card_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'package:get/get.dart';
+import 'package:grocer_ai/features/checkout/controllers/add_payment_method_controller.dart';
 import '../utils/design_tokens.dart';
 
-class AddNewCardScreen extends StatefulWidget {
+// --- MODIFIED: Converted to GetView<AddPaymentMethodController> ---
+class AddNewCardScreen extends GetView<AddPaymentMethodController> {
   const AddNewCardScreen({super.key});
 
   @override
-  State<AddNewCardScreen> createState() => _AddNewCardScreenState();
-}
-
-class _AddNewCardScreenState extends State<AddNewCardScreen> {
-  final _cardNumberCtrl = TextEditingController();
-  final _cardNameCtrl = TextEditingController();
-  final _expiryCtrl = TextEditingController();
-  final _cvcCtrl = TextEditingController();
-
-  bool _saveCard = false;
-
-  bool get _isComplete =>
-      _cardNumberCtrl.text.trim().isNotEmpty &&
-          _cardNameCtrl.text.trim().isNotEmpty &&
-          _expiryCtrl.text.trim().isNotEmpty &&
-          _cvcCtrl.text.trim().isNotEmpty &&
-          _saveCard == true;
-
-  @override
-  void initState() {
-    super.initState();
-    _cardNumberCtrl.addListener(_onAnyChange);
-    _cardNameCtrl.addListener(_onAnyChange);
-    _expiryCtrl.addListener(_onAnyChange);
-    _cvcCtrl.addListener(_onAnyChange);
-  }
-
-  void _onAnyChange() => setState(() {});
-
-  @override
-  void dispose() {
-    _cardNumberCtrl.dispose();
-    _cardNameCtrl.dispose();
-    _expiryCtrl.dispose();
-    _cvcCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // --- State is now handled in the main widget ---
+    final _cardNumberCtrl = TextEditingController();
+    final _cardNameCtrl = TextEditingController();
+    final _expiryCtrl = TextEditingController();
+    final _cvcCtrl = TextEditingController();
+    final _saveCard = true.obs; // Default to true
+
+    // The method ID (e.g., for 'stripe_card') is passed as an argument
+    final int methodTypeId = Get.arguments as int;
+
     // same status bar style
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: tealStatus,
@@ -61,7 +35,7 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
           _StatusBarStrip(),
           _TealHeader(
             title: 'Add new card',
-            onBack: () => Navigator.of(context).pop(),
+            onBack: () => Get.back(),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -92,7 +66,7 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
                       Expanded(
                         child: _InputPill(
                           controller: _expiryCtrl,
-                          hint: 'Expire date',
+                          hint: 'Expire date (MM/YY)',
                           icon: Icons.calendar_today_outlined,
                           keyboardType: TextInputType.datetime,
                         ),
@@ -102,7 +76,7 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
                         child: _InputPill(
                           controller: _cvcCtrl,
                           hint: 'CVC/CVV2',
-                          icon: Icons.credit_card, // small lock-ish icon also fine
+                          icon: Icons.lock_outline,
                           keyboardType: TextInputType.number,
                           maxLength: 4,
                         ),
@@ -112,7 +86,7 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
                   const SizedBox(height: 20),
 
                   // checkbox row
-                  Row(
+                  Obx(() => Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
@@ -121,12 +95,11 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
                         child: Checkbox(
                           // Figma teal border/fill
                           activeColor: tealHeader,
-                          side: const BorderSide(color: tealHeader, width: 1),
-                          value: _saveCard,
+                          side:
+                          const BorderSide(color: tealHeader, width: 1),
+                          value: _saveCard.value,
                           onChanged: (val) {
-                            setState(() {
-                              _saveCard = val ?? false;
-                            });
+                            _saveCard.value = val ?? false;
                           },
                         ),
                       ),
@@ -144,20 +117,22 @@ class _AddNewCardScreenState extends State<AddNewCardScreen> {
                         ),
                       ),
                     ],
-                  ),
+                  )),
 
                   const SizedBox(height: 24),
 
-                  // Add button pill
+                  // --- MODIFIED: Add button pill ---
                   _AddButtonPill(
-                    enabled: _isComplete,
-                    onTap: _isComplete
-                        ? () {
-                      // for now: pop back to AddPaymentMethodScreen
-                      // then pop back to CheckoutScreen if you want
-                      Navigator.of(context).pop(); // close AddNewCardScreen
-                    }
-                        : null,
+                    enabled: true, // You can add validation logic here
+                    onTap: () {
+                      // In a real app, you'd get a token from Stripe/etc. here
+                      // For simulation, we create a fake token.
+                      final fakeToken =
+                          "pm_sim_${DateTime.now().millisecondsSinceEpoch}";
+
+                      // Call the controller to save this card
+                      controller.saveNewCard(methodTypeId, fakeToken);
+                    },
                   ),
                 ],
               ),

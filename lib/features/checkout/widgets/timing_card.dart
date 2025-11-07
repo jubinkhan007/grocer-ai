@@ -1,30 +1,23 @@
+// lib/features/checkout/widgets/timing_card.dart
 import 'package:flutter/material.dart';
 import '../widgets/card_shell.dart' as card;
 import '../utils/design_tokens.dart';
 
 class TimingCard extends StatelessWidget {
+  final List<String> slots; // <-- MODIFIED: Now accepts a list
   final String selectedSlot;
   final ValueChanged<String> onSelect;
 
   const TimingCard({
+    required this.slots, // <-- MODIFIED
     required this.selectedSlot,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final slots = const [
-      '10 AM - 11 AM',
-      '11 AM - 12 PM',
-      '12 PM - 1 PM',
-      '1 PM - 2 PM',
-      '2 PM - 3 PM',
-      '3 PM - 4 PM',
-      '4 PM - 5 PM',
-      '5 PM - 6 PM',
-      '6 PM - 7 PM',
-      '7 PM - 8 PM',
-    ];
+    // --- REMOVED: Static list ---
+    // final slots = const [ ... ];
 
     Widget slotTile(String label) {
       final isSel = label == selectedSlot;
@@ -71,13 +64,22 @@ class TimingCard extends StatelessWidget {
           Container(height: 1, color: borderHairline),
           const SizedBox(height: 16),
 
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final s in slots) slotTile(s),
-            ],
-          ),
+          // --- MODIFIED: Check if list is empty ---
+          if (slots.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text("No delivery slots available at this time."),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final s in slots) slotTile(s), // Use dynamic list
+              ],
+            ),
         ],
       ),
     );

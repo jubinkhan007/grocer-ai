@@ -10,25 +10,25 @@ class CheckoutBinding extends Bindings {
   @override
   void dependencies() {
     // Register the service for this feature
-    Get.lazyPut(() => CheckoutService(Get.find<DioClient>()));
+    // --- MODIFIED: Added fenix: true ---
+    Get.lazyPut(() => CheckoutService(Get.find<DioClient>()), fenix: true);
 
     // Register the LocationRepository (if not already registered)
-    // The CheckoutController needs this to fetch saved addresses.
     if (!Get.isRegistered<LocationRepository>()) {
-      Get.lazyPut(() => LocationRepository(Get.find<DioClient>()));
+      // --- MODIFIED: Added fenix: true ---
+      Get.lazyPut(() => LocationRepository(Get.find<DioClient>()), fenix: true);
     }
 
     // Register the controllers
+    // --- MODIFIED: Added fenix: true ---
     Get.lazyPut(() => CheckoutController(
       Get.find<CheckoutService>(),
       Get.find<LocationRepository>(),
-    ));
+    ), fenix: true);
 
+    // --- MODIFIED: Added fenix: true ---
     Get.lazyPut(() => AddPaymentMethodController(
       Get.find<CheckoutService>(),
-    ));
-
-    // Note: We don't create a binding for AddNewCardScreen here,
-    // as its logic will be handled by AddPaymentMethodController.
+    ), fenix: true);
   }
 }

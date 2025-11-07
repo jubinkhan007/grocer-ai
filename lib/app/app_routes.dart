@@ -1,8 +1,16 @@
 // lib/app/app_routes.dart
 
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/checkout/bindings/checkout_binding.dart'; // <-- Ensure this is imported
+import 'package:grocer_ai/features/checkout/views/add_change_location.dart'; // <-- Ensure this is imported
+import 'package:grocer_ai/features/checkout/views/add_new_card_screen.dart';
+import 'package:grocer_ai/features/checkout/views/add_payment_method_screen.dart';
+import 'package:grocer_ai/features/checkout/views/checkout_screen.dart';
+// ... other imports
+import 'package:grocer_ai/features/checkout/views/order_success_screen.dart';
 import 'package:grocer_ai/features/home/home_binding.dart';
 import 'package:grocer_ai/features/home/dashboard_screen.dart';
+import 'package:grocer_ai/features/notification/views/notification_screen.dart';
 import 'package:grocer_ai/features/onboarding/location/location_binding.dart';
 import 'package:grocer_ai/features/onboarding/location/location_permission_view.dart';
 import 'package:grocer_ai/features/preferences/preferences_binding.dart';
@@ -25,12 +33,12 @@ import 'package:grocer_ai/features/auth/login/login_view.dart';
 import 'package:grocer_ai/features/auth/signup_bidning.dart';
 import 'package:grocer_ai/features/auth/signup_view.dart';
 
-import '../features/checkout/views/order_success_screen.dart';
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
 import '../features/orders/views/orders_screen.dart';
 import '../features/profile/security/views/security_screen.dart';
 import '../features/profile/settings/settings_screen.dart';
+import '../features/profile/transactions/transaction_binding.dart';
 import '../features/profile/transactions/transactions_screen.dart';
 import '../shell/main_shell.dart';
 import '../shell/main_shell_controller.dart';
@@ -43,7 +51,15 @@ abstract class Routes {
   static const home = '/home';
   static const cart = '/cart';
   static const compare = '/compare';
+
+  // --- CHECKOUT FLOW ROUTES ---
   static const checkout = '/checkout';
+  static const addPaymentMethod = '/checkout/add-payment';
+  static const addNewCard = '/checkout/add-new-card';
+  static const addChangeLocation = '/checkout/add-location'; // <-- NEW ROUTE
+  static const orderSuccess = '/checkout/success';
+  // ---
+
   static const locationPermission = '/locationPermission';
   static const orders = '/orders';
   static const profile = '/profile';
@@ -65,20 +81,19 @@ abstract class Routes {
   static const transactions = '/profile/transactions';
   static const livechat = '/profile/livechat';
   static const security = '/profile/security';
-  static const orderSuccess = '/checkout/success';
+  static const notifications = '/notifications'; // For notification screen
+  static const addNewLocation = '/checkout/add-new-location';
 }
 
 class AppPages {
   static final pages = <GetPage>[
-    // ✅ ADD THESE
+    // ... (other routes) ...
     GetPage(name: Routes.splash, page: () => const SplashView()),
     GetPage(
       name: Routes.onboarding,
       page: () => const OnboardingView(),
       binding: OnboardingBinding(),
     ),
-
-    // Auth
     GetPage(
       name: Routes.login,
       page: () => const LoginView(),
@@ -89,8 +104,6 @@ class AppPages {
       page: () => const SignUpView(),
       binding: SignUpBinding(),
     ),
-
-    // Forgot flow
     GetPage(
       name: Routes.forgot,
       page: () => const ForgotView(),
@@ -106,13 +119,11 @@ class AppPages {
       page: () => const ResetView(),
       binding: ForgotBinding(),
     ),
-
     GetPage(
       name: Routes.locationPermission,
       page: () => const LocationPermissionView(),
       binding: LocationPermissionBinding(),
     ),
-
     GetPage(
       name: Routes.prefsGrocers,
       page: () => const NearbyGrocersScreen(),
@@ -158,23 +169,49 @@ class AppPages {
     GetPage(
       name: Routes.wallet,
       page: () => WalletScreen(),
-      //binding: HomeBinding(),
-    ),
-    GetPage(
-      name: Routes.transactions,
-      page: () => TransactionsScreen(),
-      //binding: HomeBinding(),
     ),
     GetPage(
       name: Routes.security,
       page: () => SecurityScreen(),
-      //binding: HomeBinding(),
     ),
+    GetPage(
+        name: Routes.notifications,
+        page: () => const NotificationScreen()),
 
+    // --- CHECKOUT PAGES ---
+    GetPage(
+      name: Routes.checkout,
+      page: () => const CheckoutScreen(),
+      binding: CheckoutBinding(),
+    ),
+    GetPage(
+      name: Routes.addPaymentMethod,
+      page: () => const AddPaymentMethodScreen(),
+      binding: CheckoutBinding(),
+    ),
+    GetPage(
+      name: Routes.addNewCard,
+      page: () => const AddNewCardScreen(),
+      binding: CheckoutBinding(),
+    ),
+    // --- NEWLY ADDED ROUTE ---
+    GetPage(
+      name: Routes.addChangeLocation,
+      page: () => const SetNewLocationScreen(),
+      binding: CheckoutBinding(),
+    ),
     GetPage(
       name: Routes.orderSuccess,
       page: () => const CongratulationsScreen(),
       // No binding needed for this static success page
     ),
+
+    GetPage(
+      name: Routes.transactions,
+      page: () => const TransactionsScreen(), // <-- Make sure it's const
+      binding: TransactionBinding(), // <-- 2. ADD BINDING
+    ),
+
+
   ];
 }

@@ -1,68 +1,83 @@
+// lib/features/profile/views/my_referral_screen.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart'; // <-- 1. IMPORT
+import 'package:grocer_ai/features/profile/controllers/referral_controller.dart'; // <-- 2. IMPORT
+import 'package:grocer_ai/features/profile/models/referral_model.dart'; // <-- 3. IMPORT
 import 'package:grocer_ai/features/profile/views/referral_success_dialog.dart';
+import 'package:intl/intl.dart'; // <-- 4. IMPORT
 
 import 'invite_friends_screen.dart';
 
-/// ---------- DESIGN TOKENS (from Figma) ----------
-
-const _bgPage = Color(0xFFF4F6F6); // page background
-const _tealStatus = Color(0xFF002C2E); // very top system bar strip
-const _tealHeader = Color(0xFF33595B); // header bar and primary text teal
-
-const _cardBg = Color(0xFFFEFEFE); // row card bg
-const _nameText = _tealHeader; // referral name + $189 color
-const _timeText = Color(0xFF4D4D4D); // 14px secondary row text
-const _dayHeading = Color(0xFF001415); // "22 Sep 2024" etc.
-
+// ... (Design tokens remain the same) ...
+const _bgPage = Color(0xFFF4F6F6);
+const _tealStatus = Color(0xFF002C2E);
+const _tealHeader = Color(0xFF33595B);
+const _cardBg = Color(0xFFFEFEFE);
+const _nameText = _tealHeader;
+const _timeText = Color(0xFF4D4D4D);
+const _dayHeading = Color(0xFF001415);
 const _chipJoinedBg = Color(0xFFE2F2E9);
 const _chipJoinedText = Color(0xFF3E8D5E);
-
 const _chipCancelledBg = Color(0xFFF7E4DD);
 const _chipCancelledText = Color(0xFFBA4012);
-
 const _chipInvitedBg = Color(0xFFFEF1D7);
 const _chipInvitedText = Color(0xFF956703);
+const _dividerShadow = Color(0x2833595B);
 
-const _dividerShadow = Color(0x2833595B); // bottom nav bar drop shadow
-
-/// ---------- PUBLIC SCREEN WIDGET ----------
-
-class MyReferralScreen extends StatelessWidget {
+// --- 5. MODIFIED: Converted to GetView<ReferralController> ---
+class MyReferralScreen extends GetView<ReferralController> {
   const MyReferralScreen({super.key});
+
+  // --- 6. NEW: Helper to group referrals by date ---
+  Map<String, List<Referral>> _groupReferrals(List<Referral> referrals) {
+    final groups = <String, List<Referral>>{};
+    final formatter = DateFormat('dd MMM yyyy');
+    for (final ref in referrals) {
+      DateTime? dt = ref.createdAt;
+      // Fallback if createdAt is null, use update_at from API
+      if (dt == null && json['updated_at'] != null) {
+        dt = DateTime.tryParse(json['updated_at']);
+      }
+
+      final dateString = dt != null ? formatter.format(dt) : "Unknown Date";
+
+      if (groups.containsKey(dateString)) {
+        groups[dateString]!.add(ref);
+      } else {
+        groups[dateString] = [ref];
+      }
+    }
+    return groups;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // match light icons on dark status background like figma
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: _tealStatus,
-      statusBarIconBrightness: Brightness.light, // Android status icons
-      statusBarBrightness: Brightness.dark, // iOS status icons are light on dark bg
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
     ));
 
     final media = MediaQuery.of(context);
 
     return Scaffold(
-      // Don't provide a bottomNavigationBar here since your shell already does it.
       backgroundColor: _bgPage,
       body: Column(
         children: [
-          /// -------- TOP STRIP (tealStatus) ----------
-          /// In your screenshot this is ~48px tall and full tealStatus behind iOS status stuff.
+          // ... (TOP STRIP and HEADER BAR remain the same) ...
           Container(
             color: _tealStatus,
             width: double.infinity,
             padding: EdgeInsets.only(
-              top: media.padding.top, // notch / dynamic island spacing
+              top: media.padding.top,
               bottom: 12,
               left: 24,
               right: 24,
             ),
-            // We are intentionally NOT recreating battery/wifi/time here.
-            // The real device paints that. We just give the dark bg.
           ),
-
-          /// -------- HEADER BAR (tealHeader) ----------
           Container(
             color: _tealHeader,
             width: double.infinity,
@@ -70,7 +85,6 @@ class MyReferralScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // back chevron 14x20 in figma, but give a 24x24 tap target
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
@@ -91,126 +105,56 @@ class MyReferralScreen extends StatelessWidget {
                   'My referral',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20, // Figma shows 20 bold-ish
+                    fontSize: 20,
                     fontFamily: 'Roboto',
                     fontWeight: FontWeight.w700,
                     height: 1.3,
                   ),
                 ),
-                // spacer to push anything you *might* add on RHS later
               ],
             ),
           ),
 
-          /// -------- LIST CONTENT (scrolls under header) ----------
+          // --- 7. MODIFIED: Dynamic List Content ---
           Expanded(
             child: Container(
               color: _bgPage,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  24,
-                  24, // top spacing between header & first date section
-                  24,
-                  120, // breathing room above bottom nav bar
-                ),
-                children: const [
-                  _ReferralDaySection(
-                    dateLabel: '22 Sep 2024',
-                    entries: [
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Sophia Williams',
-                        time: '11:00am',
-                        amount: '\$189',
-                        statusText: 'Joined',
-                        statusKind: _ReferralStatusKind.joined,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Olivia Brown',
-                        time: '7:50pm',
-                        amount: '\$189',
-                        statusText: 'Cancelled',
-                        statusKind: _ReferralStatusKind.cancelled,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Mason Brown',
-                        time: '8:20am',
-                        amount: '\$189',
-                        statusText: 'Cancelled',
-                        statusKind: _ReferralStatusKind.cancelled,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Liam Smith',
-                        time: '8:20am',
-                        amount: '\$189',
-                        statusText: 'Invited',
-                        statusKind: _ReferralStatusKind.invited,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Emily Johnson',
-                        time: '2:30pm',
-                        amount: '\$189',
-                        statusText: 'Joined',
-                        statusKind: _ReferralStatusKind.joined,
-                      ),
-                    ],
-                  ),
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                  SizedBox(height: 24),
+                if (controller.referrals.isEmpty) {
+                  return const Center(child: Text('You have no referrals yet.'));
+                }
 
-                  _ReferralDaySection(
-                    dateLabel: '12 Sep 2024',
-                    entries: [
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Emily Johnson',
-                        time: '2:30pm',
-                        amount: '\$189',
-                        statusText: 'Joined',
-                        statusKind: _ReferralStatusKind.joined,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Ava Davis',
-                        time: '3:05pm',
-                        amount: '\$189',
-                        statusText: 'Joined',
-                        statusKind: _ReferralStatusKind.joined,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Liam Johnson',
-                        time: '4:15pm',
-                        amount: '\$189',
-                        statusText: 'Invited',
-                        statusKind: _ReferralStatusKind.invited,
-                      ),
-                      _ReferralEntryData(
-                        avatarUrl: 'https://placehold.co/48x48',
-                        name: 'Olivia Carter',
-                        time: '2:30pm',
-                        amount: '\$189',
-                        statusText: 'Joined',
-                        statusKind: _ReferralStatusKind.joined,
-                      ),
-                    ],
+                final grouped = _groupReferrals(controller.referrals);
+                final dateKeys = grouped.keys.toList();
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    24,
+                    24,
+                    120,
                   ),
-                ],
-              ),
+                  itemCount: dateKeys.length,
+                  itemBuilder: (context, index) {
+                    final dateLabel = dateKeys[index];
+                    final entries = grouped[dateLabel]!;
+                    return _ReferralDaySection(
+                      dateLabel: dateLabel,
+                      entries: entries, // Pass the dynamic list
+                    );
+                  },
+                );
+              }),
             ),
           ),
 
-          /// -------- bottom nav shadow "bleed"
-          /// You already render the true BottomNav in your shell.
-          /// That nav has a white bg + upward shadow (0,-4 blur12 rgba(51,89,91,0.16)).
-          /// We just paint a matching translucent fade behind it so scrolling
-          /// content doesn't peek through.
+          // ... (bottom nav shadow "bleed" remains the same) ...
           Container(
-            height: media.padding.bottom, // mostly 0 on iOS sim except home bar
+            height: media.padding.bottom,
             decoration: const BoxDecoration(
               color: Colors.transparent,
               boxShadow: [
@@ -228,11 +172,10 @@ class MyReferralScreen extends StatelessWidget {
   }
 }
 
-/// ---------- DAY SECTION (e.g. "22 Sep 2024" + list of rows) ----------
-
+// --- 8. MODIFIED: _ReferralDaySection takes Referral model ---
 class _ReferralDaySection extends StatelessWidget {
   final String dateLabel;
-  final List<_ReferralEntryData> entries;
+  final List<Referral> entries; // <-- MODIFIED
   const _ReferralDaySection({
     required this.dateLabel,
     required this.entries,
@@ -243,7 +186,6 @@ class _ReferralDaySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Date heading "22 Sep 2024"
         Text(
           dateLabel,
           style: const TextStyle(
@@ -255,13 +197,10 @@ class _ReferralDaySection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-
-        // List of entry cards — each 8px radius, white bg, 16 horizontal, 12 vertical,
-        // separated by 16px vertical gap
         Column(
           children: [
             for (int i = 0; i < entries.length; i++) ...[
-              _ReferralRow(data: entries[i]),
+              _ReferralRow(data: entries[i]), // <-- MODIFIED
               if (i != entries.length - 1) const SizedBox(height: 16),
             ],
           ],
@@ -271,34 +210,27 @@ class _ReferralDaySection extends StatelessWidget {
   }
 }
 
-/// ---------- DATA MODEL FOR A ROW (simple struct) ----------
+// --- 9. REMOVED: Static _ReferralEntryData ---
 
-class _ReferralEntryData {
-  final String avatarUrl;
-  final String name;
-  final String time;
-  final String amount;
-  final String statusText;
-  final _ReferralStatusKind statusKind;
-
-  const _ReferralEntryData({
-    required this.avatarUrl,
-    required this.name,
-    required this.time,
-    required this.amount,
-    required this.statusText,
-    required this.statusKind,
-  });
-}
-
+// --- 10. MODIFIED: _ReferralStatusKind logic ---
 enum _ReferralStatusKind { joined, cancelled, invited }
 
-/// ---------- STATUS CHIP WIDGET (Joined / Cancelled / Invited) ----------
+_ReferralStatusKind _kindFromKey(String key) {
+  switch (key.toLowerCase()) {
+    case 'joined':
+    case 'completed': // API uses 'completed'
+      return _ReferralStatusKind.joined;
+    case 'cancelled':
+      return _ReferralStatusKind.cancelled;
+    case 'invited':
+    default:
+      return _ReferralStatusKind.invited;
+  }
+}
 
 class _ReferralStatusChip extends StatelessWidget {
   final String label;
   final _ReferralStatusKind kind;
-
   const _ReferralStatusChip({
     required this.label,
     required this.kind,
@@ -306,7 +238,6 @@ class _ReferralStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // map kind -> bg/text colors from Figma
     Color bg;
     Color fg;
     switch (kind) {
@@ -319,6 +250,7 @@ class _ReferralStatusChip extends StatelessWidget {
         fg = _chipCancelledText;
         break;
       case _ReferralStatusKind.invited:
+      default:
         bg = _chipInvitedBg;
         fg = _chipInvitedText;
         break;
@@ -335,7 +267,7 @@ class _ReferralStatusChip extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        label,
+        label.capitalizeFirst ?? label,
         textAlign: TextAlign.center,
         style: TextStyle(
           color: fg,
@@ -349,37 +281,33 @@ class _ReferralStatusChip extends StatelessWidget {
   }
 }
 
-/// ---------- SINGLE REFERRAL ROW CARD ----------
-/// Layout per Figma:
-///  - Card radius 8, white
-///  - Vertical padding 12, horizontal padding 16
-///  - Leading avatar 48x48 round
-///  - Beside that: name + $amount (same baseline row)
-///                 time + status chip (row below)
-///
-/// Typography:
-///  name     16 / w600 / #33595B
-///  $189     16 / w600 / #33595B
-///  time     14 / w400 / #4D4D4D
-///  status   chip styles per kind
+// --- 11. MODIFIED: _ReferralRow takes Referral model ---
 class _ReferralRow extends StatelessWidget {
-  final _ReferralEntryData data;
+  final Referral data;
   const _ReferralRow({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    // API provides 'earned'
+    final time = data.createdAt != null
+        ? DateFormat('h:mma').format(data.createdAt!)
+        : '';
+    final amount = '\$${data.amount.toStringAsFixed(0)}';
+    final statusKind = _kindFromKey(data.status);
+    final cleanAmount = data.amount.toStringAsFixed(0);
+    // API provides 'name' and 'avatar'
+    final String avatarUrl = data.avatar ?? 'https://placehold.co/48x48';
+
     return InkWell(
-      // big rounded hit region just like you'd expect on iOS lists
       borderRadius: BorderRadius.circular(8),
       onTap: () {
-        // we’ll strip the $ just for nicer dialog text,
-        // since the dialog wants just "50" etc.
-        final cleanAmount = data.amount.replaceAll('\$', '');
-
-        showReferralCongratsDialog(
-          context,
-          amountEarned: cleanAmount,
-        );
+        // Only show congrats dialog if they've earned something
+        if (data.amount > 0) {
+          showReferralCongratsDialog(
+            context,
+            amountEarned: cleanAmount,
+          );
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -393,30 +321,26 @@ class _ReferralRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // avatar 48x48 circular
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: NetworkImage(data.avatarUrl),
+                  image: NetworkImage(avatarUrl),
                   fit: BoxFit.cover,
+                  onError: (e, s) => const Icon(Icons.person), // Fallback
                 ),
               ),
             ),
             const SizedBox(width: 16),
-
-            // main text column fills remaining space
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// top row: name (left)  |  amount (right)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // name
                       Expanded(
                         child: Text(
                           data.name,
@@ -431,7 +355,7 @@ class _ReferralRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        data.amount,
+                        amount,
                         style: const TextStyle(
                           color: _nameText,
                           fontSize: 16,
@@ -443,14 +367,12 @@ class _ReferralRow extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-
-                  /// bottom row: time (left) | status chip (right)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
-                          data.time,
+                          time,
                           style: const TextStyle(
                             color: _timeText,
                             fontSize: 14,
@@ -462,8 +384,8 @@ class _ReferralRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       _ReferralStatusChip(
-                        label: data.statusText,
-                        kind: data.statusKind,
+                        label: data.status,
+                        kind: statusKind,
                       ),
                     ],
                   ),
@@ -477,7 +399,7 @@ class _ReferralRow extends StatelessWidget {
   }
 }
 
-
+// ... (showReferralCongratsDialog remains the same) ...
 Future<void> showReferralCongratsDialog(
     BuildContext context, {
       required String amountEarned,
@@ -502,18 +424,11 @@ Future<void> showReferralCongratsDialog(
           scale: 0.95 + (0.05 * curved.value),
           child: ReferralCongratsDialog(
             amountEarned: amountEarned,
-
-            //  CLOSE (X) button
             onClose: () {
-              Navigator.of(dialogContext).pop(); // just dismiss
-            },
-
-            //  "Invite another" button
-            onInviteAnother: () {
-              // 1. close the dialog
               Navigator.of(dialogContext).pop();
-
-              // 2. push the InviteFriendsScreen
+            },
+            onInviteAnother: () {
+              Navigator.of(dialogContext).pop();
               Navigator.of(dialogContext).push(
                 MaterialPageRoute(
                   builder: (_) => const InviteFriendsScreen(),

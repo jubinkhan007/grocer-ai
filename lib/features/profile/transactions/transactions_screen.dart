@@ -1,6 +1,10 @@
+// lib/features/profile/transactions/transactions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart'; // <-- 1. IMPORT
 import 'package:grocer_ai/features/profile/transactions/transaction_details_screen.dart';
+import 'model/transaction_model.dart';
+import 'transaction_controller.dart'; // <-- 3. IMPORT
 
 const _bgPage = Color(0xFFF4F6F6);
 const _tealStatus = Color(0xFF002C2E);
@@ -17,91 +21,28 @@ const _pillCompletedText = Color(0xFF3E8D5E);
 const _pillCancelledBg = Color(0xFFF7E4DD);
 const _pillCancelledText = Color(0xFFBA4012);
 
+// --- 4. ADD NEW PILL COLORS ---
+const _pillFailedBg = Color(0xFFF7E4DD);
+const _pillFailedText = Color(0xFFBA4012);
+const _pillPendingBg = Color(0xFFFEF1D7);
+const _pillPendingText = Color(0xFF956703);
+
 const _cardBg = Color(0xFFFEFEFE);
 const _avatarBg = Color(0xFFF4F6F6);
 
-// ------------------------------------------------------------
-// IMPORTANT: no Scaffold here.
-// This widget is meant to live INSIDE MainShell's Profile tab
-// ------------------------------------------------------------
-class TransactionsScreen extends StatelessWidget {
+// --- 5. MODIFIED: Converted to GetView<TransactionController> ---
+class TransactionsScreen extends GetView<TransactionController> {
   const TransactionsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // keep Figma status bar styling
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: _tealStatus,
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
     ));
 
-    final groups = <_TxGroup>[
-      _TxGroup(
-        '22 Sep 2024',
-        const [
-          _TxItem(
-            store: 'Kroger',
-            amount: '\$321',
-            method: 'Apple Pay',
-            status: _TxStatus.completed,
-          ),
-          _TxItem(
-            store: 'Kroger',
-            amount: '\$321',
-            method: 'Apple Pay',
-            status: _TxStatus.completed,
-          ),
-          _TxItem(
-            store: 'Aldi',
-            amount: '\$654',
-            method: 'Google Pay',
-            status: _TxStatus.cancelled,
-          ),
-          _TxItem(
-            store: 'Walmart',
-            amount: '\$234',
-            method: 'Credit Card',
-            status: _TxStatus.completed,
-          ),
-        ],
-      ),
-      _TxGroup(
-        '12 Sep 2024',
-        const [
-          _TxItem(
-            store: 'Walmart',
-            amount: '\$789',
-            method: 'Credit Card',
-            status: _TxStatus.cancelled,
-          ),
-          _TxItem(
-            store: 'Aldi',
-            amount: '\$456',
-            method: 'Google Pay',
-            status: _TxStatus.completed,
-          ),
-          _TxItem(
-            store: 'Kroger',
-            amount: '\$987',
-            method: 'Apple Pay',
-            status: _TxStatus.completed,
-          ),
-          _TxItem(
-            store: 'Walmart',
-            amount: '\$789',
-            method: 'Credit Card',
-            status: _TxStatus.cancelled,
-          ),
-          _TxItem(
-            store: 'Walmart',
-            amount: '\$234',
-            method: 'Credit Card',
-            status: _TxStatus.completed,
-          ),
-        ],
-      ),
-    ];
+    // --- 6. REMOVED static groups list ---
 
     return Container(
       color: _bgPage,
@@ -109,32 +50,49 @@ class TransactionsScreen extends StatelessWidget {
         children: [
           const _TransactionsHeader(),
 
-          // scroll body
+          // --- 7. MODIFIED: Added Obx for loading/empty/data states ---
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                24,
-                24,
-                24,
-                24 + 80, // leave space so FFBottomNav (from shell) doesn't overlap
-              ),
-              itemCount: groups.length,
-              itemBuilder: (context, groupIndex) {
-                final group = groups[groupIndex];
-                return _TransactionGroupSection(
-                  group: group,
-                  isLast: groupIndex == groups.length - 1,
-                  onItemTap: (txItem) {
-                    // push detail screen into THIS tab's navigator
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const TransactionDetailScreen(),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (controller.groupedTransactions.isEmpty) {
+                return const Center(child: Text('No transactions found.'));
+              }
+
+              final groupKeys = controller.groupedTransactions.keys.toList();
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  24,
+                  24,
+                  24,
+                  24 + 80,
+                ),
+                itemCount: groupKeys.length,
+                itemBuilder: (context, groupIndex) {
+                  final dateLabel = groupKeys[groupIndex];
+                  final items = controller.groupedTransactions[dateLabel]!;
+
+                  return _TransactionGroupSection(
+                    dateLabel: dateLabel, // <-- Pass dynamic date
+                    items: items, // <-- Pass dynamic list
+                    isLast: groupIndex == groupKeys.length - 1,
+                    onItemTap: (txItem) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => TransactionDetailScreen(
+                            // <-- Pass dynamic ID
+                            transactionId: txItem.id.toString(),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),
@@ -142,7 +100,7 @@ class TransactionsScreen extends StatelessWidget {
   }
 }
 
-/// HEADER stays exactly the same UI you already built
+// ... (_TransactionsHeader remains the same) ...
 class _TransactionsHeader extends StatelessWidget {
   const _TransactionsHeader();
 
@@ -150,7 +108,6 @@ class _TransactionsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // dark 48px strip behind status icons
         Container(
           color: _tealStatus,
           width: double.infinity,
@@ -160,8 +117,6 @@ class _TransactionsHeader extends StatelessWidget {
             child: const SizedBox(height: 0),
           ),
         ),
-
-        // teal toolbar (63px high in figma)
         Container(
           width: double.infinity,
           height: 63,
@@ -204,18 +159,19 @@ class _TransactionsHeader extends StatelessWidget {
   }
 }
 
-// ====== the rest of the helper widgets (unchanged visually) ======
-
+// --- 8. MODIFIED: _TransactionGroupSection to accept model ---
 class _TransactionGroupSection extends StatelessWidget {
   const _TransactionGroupSection({
-    required this.group,
+    required this.dateLabel,
+    required this.items,
     required this.isLast,
     required this.onItemTap,
   });
 
-  final _TxGroup group;
+  final String dateLabel;
+  final List<ProfilePaymentTransaction> items; // <-- Use model
   final bool isLast;
-  final void Function(_TxItem) onItemTap;
+  final void Function(ProfilePaymentTransaction) onItemTap; // <-- Use model
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +181,7 @@ class _TransactionGroupSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            group.dateLabel,
+            dateLabel, // <-- Use dynamic label
             style: const TextStyle(
               color: _textHeading,
               fontSize: 16,
@@ -237,12 +193,12 @@ class _TransactionGroupSection extends StatelessWidget {
           const SizedBox(height: 16),
           Column(
             children: [
-              for (int i = 0; i < group.items.length; i++) ...[
+              for (int i = 0; i < items.length; i++) ...[
                 _TransactionCard(
-                  item: group.items[i],
-                  onTap: () => onItemTap(group.items[i]),
+                  item: items[i], // <-- Pass item
+                  onTap: () => onItemTap(items[i]),
                 ),
-                if (i != group.items.length - 1) const SizedBox(height: 16),
+                if (i != items.length - 1) const SizedBox(height: 16),
               ],
             ],
           ),
@@ -252,13 +208,14 @@ class _TransactionGroupSection extends StatelessWidget {
   }
 }
 
+// --- 9. MODIFIED: _TransactionCard to accept model ---
 class _TransactionCard extends StatelessWidget {
   const _TransactionCard({
     required this.item,
     required this.onTap,
   });
 
-  final _TxItem item;
+  final ProfilePaymentTransaction item; // <-- Use model
   final VoidCallback onTap;
 
   @override
@@ -278,7 +235,6 @@ class _TransactionCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // leading square 48x48
               Container(
                 width: 48,
                 height: 48,
@@ -288,27 +244,25 @@ class _TransactionCard extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 // TODO: plug in brand logos here
-                child: item.logo ??
-                    const Icon(
-                      Icons.store_mall_directory_rounded,
-                      size: 24,
-                      color: _tealHeader,
-                    ),
+                child: const Icon(
+                  Icons.store_mall_directory_rounded,
+                  size: 24,
+                  color: _tealHeader,
+                ),
               ),
               const SizedBox(width: 16),
-
-              // right block
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // merchant + amount
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
-                            item.store,
+                            // <-- Use dynamic data
+                            item.order.id
+                                .toString(), // API doesn't send store name here
                             style: const TextStyle(
                               color: _textStore,
                               fontSize: 16,
@@ -319,7 +273,7 @@ class _TransactionCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          item.amount,
+                          '\$${item.amount}', // <-- Use dynamic data
                           style: const TextStyle(
                             color: _textPrimary,
                             fontSize: 16,
@@ -331,16 +285,14 @@ class _TransactionCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-
-                    // status pill + method aligned right
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _StatusPill(status: item.status),
+                        _StatusPill(statusKey: item.status), // <-- Use dynamic data
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            item.method,
+                            item.userPaymentMethod.displayName, // <-- Use dynamic data
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               color: _textMethod,
@@ -364,23 +316,31 @@ class _TransactionCard extends StatelessWidget {
   }
 }
 
+// --- 10. MODIFIED: _StatusPill to accept string key and handle all cases ---
 class _StatusPill extends StatelessWidget {
-  final _TxStatus status;
-  const _StatusPill({required this.status});
+  final String statusKey; // 'pending', 'paid', 'failed', 'refunded'
+  const _StatusPill({required this.statusKey});
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = status == _TxStatus.completed;
+    final (Color bgColor, Color fgColor, String label) = switch (statusKey) {
+      'paid' => (_pillCompletedBg, _pillCompletedText, 'Completed'),
+      'failed' => (_pillFailedBg, _pillFailedText, 'Failed'),
+      'cancelled' => (_pillCancelledBg, _pillCancelledText, 'Cancelled'),
+      'refunded' => (_pillCancelledBg, _pillCancelledText, 'Refunded'),
+      _ => (_pillPendingBg, _pillPendingText, 'Pending'),
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isCompleted ? _pillCompletedBg : _pillCancelledBg,
+        color: bgColor,
         borderRadius: BorderRadius.circular(40),
       ),
       child: Text(
-        isCompleted ? 'Completed' : 'Cancelled',
+        label,
         style: TextStyle(
-          color: isCompleted ? _pillCompletedText : _pillCancelledText,
+          color: fgColor,
           fontSize: 12,
           fontWeight: FontWeight.w400,
           height: 1.2,
@@ -391,26 +351,4 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-// tiny value objects
-enum _TxStatus { completed, cancelled }
-
-class _TxItem {
-  final String store;
-  final String amount;
-  final String method;
-  final _TxStatus status;
-  final Widget? logo;
-  const _TxItem({
-    required this.store,
-    required this.amount,
-    required this.method,
-    required this.status,
-    this.logo,
-  });
-}
-
-class _TxGroup {
-  final String dateLabel;
-  final List<_TxItem> items;
-  const _TxGroup(this.dateLabel, this.items);
-}
+// --- 11. REMOVED static model classes _TxStatus, _TxItem, _TxGroup ---

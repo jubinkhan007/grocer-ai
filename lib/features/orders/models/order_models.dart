@@ -41,6 +41,7 @@ class Order {
   final int id;
   final String orderId;
   final String price;
+  final String? discount; // <-- MODIFIED: Added discount
   final String status; // This will likely be an ID or key
   final String deliveryMethod;
   final String deliveryAddress;
@@ -50,6 +51,7 @@ class Order {
     required this.id,
     required this.orderId,
     required this.price,
+    this.discount, // <-- MODIFIED
     required this.status,
     required this.deliveryMethod,
     required this.deliveryAddress,
@@ -61,6 +63,7 @@ class Order {
       id: json['id'] ?? 0,
       orderId: json['order_id'] ?? '',
       price: json['price'] ?? '0.00',
+      discount: json['discount'], // <-- MODIFIED
       status: json['status']?.toString() ?? 'pending',
       deliveryMethod: json['delivery_method'] ?? '',
       deliveryAddress: json['delivery_address'] ?? '',

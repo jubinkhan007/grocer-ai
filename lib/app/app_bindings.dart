@@ -17,6 +17,8 @@ import '../features/profile/services/partner_service.dart';
 import '../features/profile/services/profile_service.dart';
 import '../features/profile/controllers/profile_controller.dart';
 import '../features/profile/services/referral_service.dart';
+import '../features/profile/wallet/wallet_controller.dart';
+import '../features/profile/wallet/wallet_service.dart';
 import '../shell/main_shell_controller.dart';
 
 class AppBindings extends Bindings {
@@ -84,7 +86,14 @@ class AppBindings extends Bindings {
       fenix: true,
     );
 
-
+    Get.lazyPut<WalletService>(
+          () => WalletService(Get.find<DioClient>()),
+      fenix: true,
+    );
+    Get.lazyPut<WalletController>(
+          () => WalletController(Get.find<WalletService>()),
+      fenix: true,
+    );
 
 
   }

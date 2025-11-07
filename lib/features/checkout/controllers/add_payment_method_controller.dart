@@ -1,8 +1,10 @@
 // lib/features/checkout/controllers/add_payment_method_controller.dart
+
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/checkout/models/payment_method_model.dart';
 import 'package:grocer_ai/features/checkout/models/user_payment_method_model.dart';
 import 'package:grocer_ai/features/checkout/services/checkout_service.dart';
+import 'package:grocer_ai/features/checkout/views/add_new_card_screen.dart'; // ⬅️ make sure this import exists
 
 class AddPaymentMethodController extends GetxController {
   final CheckoutService _service;
@@ -21,12 +23,10 @@ class AddPaymentMethodController extends GetxController {
   Future<void> loadMethods() async {
     try {
       isLoading.value = true;
-      // Fetch both lists in parallel
-      final futures = [
+      final results = await Future.wait([
         _service.fetchPaymentMethods(),
         _service.fetchUserPaymentMethods(),
-      ];
-      final results = await Future.wait(futures);
+      ]);
 
       paymentMethodTypes.assignAll(results[0] as List<PaymentMethod>);
       userPaymentMethods.assignAll(results[1] as List<UserPaymentMethod>);
@@ -48,32 +48,27 @@ class AddPaymentMethodController extends GetxController {
   }
 
   void handleAddNewMethod(PaymentMethod methodType) {
-    // This is where you would trigger the native SDK (e.g., Stripe)
-    // For now, we'll simulate it.
-
-    if (methodType.key == 'stripe_card') {
-      // 1. The UI would navigate to `AddNewCardScreen`
-      // 2. That screen would use the Stripe SDK to get a "pm_xxx" token.
-      // 3. It would call back to this controller with that token.
-      Get.snackbar('Not Implemented', 'Stripe SDK flow starts here.');
-
-      // --- SIMULATION ---
-      // We'll just pretend we got a token and save it.
-      _saveNewCard(methodType.id, "pm_simulated_123456");
-
+    if (methodType.key == 'stripe_card' || methodType.key == 'card') {
+      // We navigate to AddNewCardScreen and pass ONLY the method id.
+      Get.to(
+            () => const AddNewCardScreen(),
+        arguments: methodType.id,
+      );
     } else {
-      Get.snackbar('Not Implemented', '${methodType.name} flow starts here.');
+      Get.snackbar('Not supported', '${methodType.name} is not supported yet.');
     }
   }
 
-  Future<void> _saveNewCard(int methodId, String providerToken) async {
+  Future<void> saveNewCard(int methodId, String providerToken) async {
     try {
       final newMethod = await _service.saveUserPaymentMethod(
         paymentMethodId: methodId,
         providerPaymentId: providerToken,
       );
       userPaymentMethods.add(newMethod);
-      Get.back(); // Go back from AddPaymentMethodScreen to CheckoutScreen
+
+      // Go back to the list (AddPaymentMethodScreen) and show success
+      Get.back();
       Get.snackbar('Success', 'New card added.');
     } catch (e) {
       Get.snackbar('Error', 'Could not save new card: $e');

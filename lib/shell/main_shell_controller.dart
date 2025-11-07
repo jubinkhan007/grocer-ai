@@ -7,6 +7,8 @@ import '../core/theme/network/dio_client.dart';
 import '../features/preferences/preferences_controller.dart';
 import '../features/preferences/preferences_repository.dart';
 import '../features/profile/preferences/views/preferences_screen.dart';
+import '../features/profile/referrals/referral_binding.dart';
+import '../features/profile/transactions/transaction_binding.dart';
 import '../features/profile/views/my_referral_screen.dart';
 import '../features/profile/views/referral_summary_screen.dart';
 
@@ -29,31 +31,35 @@ class MainShellController extends GetxController {
     // make sure we’re looking at tab 4 (SettingsScreen = profile tab)
     goTo(4);
 
+    // --- 2. MODIFY THIS NAVIGATION ---
+    // Change MaterialPageRoute to GetPageRoute
     navKeys[4].currentState?.push(
-      MaterialPageRoute(
-        builder: (_) => const TransactionsScreen(),
+      GetPageRoute(
+        page: () => const TransactionsScreen(),
+        binding: TransactionBinding(), // <-- This loads the controller
       ),
     );
   }
-
   /// (Optional helper) Open transaction detail directly,
   /// in case you ever need deep-linking into a specific transaction
-  void openTransactionDetail() {
+  void openTransactionDetail(String transactionId) {
     goTo(4);
 
     navKeys[4].currentState?.push(
       MaterialPageRoute(
-        builder: (_) => const TransactionDetailScreen(),
+        // --- MODIFIED: Pass 'transactionId' to the screen ---
+        builder: (_) => TransactionDetailScreen(transactionId: transactionId),
       ),
     );
   }
 
   void openReferral() {
     goTo(4);
-
+    // --- 2. MODIFY THIS NAVIGATION ---
     navKeys[4].currentState?.push(
-      MaterialPageRoute(
-        builder: (_) => const ReferralSummaryScreen(),
+      GetPageRoute(
+        page: () => const ReferralSummaryScreen(),
+        binding: ReferralBinding(), // <-- ADD BINDING
       ),
     );
   }

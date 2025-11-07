@@ -27,6 +27,7 @@ class ApiPath {
   static const String preferences = '/api/v1/preferences/'; // GET (paginated)
   static const String userPreferences =
       '/api/v1/user-preferences/'; // POST per screen
+  // profile
   static const profilePersonalInfo = '/api/v1/profile/personal-info/';
   static const profilePartners = '/api/v1/profile/partners/';
   static const profileReferrals = '/api/v1/profile/referrals/';
@@ -35,6 +36,11 @@ class ApiPath {
   static const passwordChange = '/api/v1/auth/password-change/';
   static const String profileLocations = '/api/v1/profile/locations/';
   static const products = '/api/v1/products/';
+  static const profileWallet = '/api/v1/profile/wallet/';
+
+
+  // profile-transaction
+  static const profileTransactions = '/api/v1/profile/transactions/';
   // --- NEW ORDER PREFERENCES ---
   static const String orderPreferenceList = '/api/v1/order-preference-list/';
   static const String orderPreferences = '/api/v1/order-preferences/';
@@ -63,4 +69,8 @@ class ApiPath {
   // --- NEW: COMPARE/BID ---
   static const String compareGrocery = '/api/v1/compare-grocery/'; // GET
   static const String bidGrocery = '/api/v1/bid-grocery/'; // GET (for rebid)
+
+// Static_pages
+  static const String staticPages = '/api/v1/static-pages/';
+
 }

@@ -1,9 +1,14 @@
+// lib/features/checkout/views/add_payment_method_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:grocer_ai/app/app_routes.dart';
+import 'package:grocer_ai/features/checkout/controllers/add_payment_method_controller.dart';
+import 'package:grocer_ai/features/checkout/controllers/checkout_controller.dart';
 import '../utils/design_tokens.dart';
-import 'add_new_card_screen.dart'; // we'll define below
 
-class AddPaymentMethodScreen extends StatelessWidget {
+// --- MODIFIED: Converted to GetView<AddPaymentMethodController> ---
+class AddPaymentMethodScreen extends GetView<AddPaymentMethodController> {
   const AddPaymentMethodScreen({super.key});
 
   @override
@@ -22,51 +27,80 @@ class AddPaymentMethodScreen extends StatelessWidget {
           _StatusBarStrip(),
           _TealHeader(
             title: 'Add payment method',
-            onBack: () => Navigator.of(context).pop(),
+            onBack: () => Get.back(),
           ),
+          // --- MODIFIED: Added Obx for loading state ---
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                children: [
-                  _PaymentMethodRow(
-                    label: 'Credit/Debit card',
-                    leading: _FakeBrandIcon(color: tealHeader),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AddNewCardScreen(),
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- MODIFIED: Dynamic list of SAVED methods ---
+                    if (controller.userPaymentMethods.isNotEmpty) ...[
+                      const Text(
+                        "Saved Methods",
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary),
+                      ),
+                      const SizedBox(height: 12),
+                      ...controller.userPaymentMethods.map((method) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _PaymentMethodRow(
+                            label:
+                            "${method.brand ?? 'Card'} ending in ${method.last4 ?? '....'}",
+                            leading: _FakeBrandIcon(
+                                color: (method.brand?.toLowerCase() == 'visa')
+                                    ? Colors.blue
+                                    : Colors.orange),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: errorRed),
+                              onPressed: () => controller.deleteMethod(method.id),
+                            ),
+                            onTap: () {
+                              // Select this card and go back
+                              Get.find<CheckoutController>()
+                                  .selectPaymentMethod(method.id);
+                              Get.back();
+                            },
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // --- MODIFIED: Dynamic list of NEW method types ---
+                    const Text(
+                      "Add New Method",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary),
+                    ),
+                    const SizedBox(height: 12),
+                    ...controller.paymentMethodTypes.map((methodType) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _PaymentMethodRow(
+                          label: methodType.name,
+                          leading: _FakeBrandIcon(color: tealHeader),
+                          onTap: () => controller.handleAddNewMethod(methodType),
                         ),
                       );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _PaymentMethodRow(
-                    label: 'Paypal',
-                    leading: _FakeBrandIcon(color: Colors.blueGrey),
-                    onTap: () {
-                      // TODO: PayPal flow
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _PaymentMethodRow(
-                    label: 'Apple Pay',
-                    leading: _FakeBrandIcon(color: Colors.black),
-                    onTap: () {
-                      // TODO: Apple Pay flow
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _PaymentMethodRow(
-                    label: 'Google Pay',
-                    leading: _FakeBrandIcon(color: Colors.redAccent),
-                    onTap: () {
-                      // TODO: Google Pay flow
-                    },
-                  ),
-                ],
-              ),
-            ),
+                    }),
+                  ],
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -133,15 +167,17 @@ class _TealHeader extends StatelessWidget {
   }
 }
 
-/// Single 56px pill row from Figma (white bg, radius 29, 0.5px border #E6EAEB)
+/// --- MODIFIED: Single 56px pill row, now accepts a trailing widget ---
 class _PaymentMethodRow extends StatelessWidget {
   final String label;
   final Widget leading;
+  final Widget? trailing; // <-- NEW
   final VoidCallback onTap;
   const _PaymentMethodRow({
     required this.label,
     required this.leading,
     required this.onTap,
+    this.trailing, // <-- NEW
   });
 
   @override
@@ -163,7 +199,7 @@ class _PaymentMethodRow extends StatelessWidget {
             ),
             color: pillBg,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.only(left: 16), // <-- MODIFIED
           child: Row(
             children: [
               SizedBox(
@@ -172,16 +208,19 @@ class _PaymentMethodRow extends StatelessWidget {
                 child: Center(child: leading),
               ),
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                  color: textPrimary,
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
+                    color: textPrimary,
+                  ),
                 ),
               ),
+              if (trailing != null) trailing!, // <-- NEW
             ],
           ),
         ),

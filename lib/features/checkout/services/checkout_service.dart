@@ -1,4 +1,5 @@
 // lib/features/checkout/services/checkout_service.dart
+
 import 'package:dio/dio.dart';
 import 'package:grocer_ai/core/theme/network/api_endpoints.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
@@ -7,15 +8,13 @@ import 'package:grocer_ai/features/checkout/models/payment_method_model.dart';
 import 'package:grocer_ai/features/checkout/models/time_slot_model.dart';
 import 'package:grocer_ai/features/checkout/models/user_payment_method_model.dart';
 import 'package:grocer_ai/features/orders/models/create_order_request.dart';
-
 import '../../orders/models/order_models.dart';
-
 
 class CheckoutService {
   final DioClient _client;
   CheckoutService(this._client);
 
-  /// POST /api/v1/orders/ (NEW)
+  /// POST /api/v1/orders/
   Future<Order> createOrder(CreateOrderRequest request) async {
     try {
       final res = await _client.postJson(ApiPath.orders, request.toJson());
@@ -56,12 +55,10 @@ class CheckoutService {
     }
   }
 
-  /// GET /api/v1/user-payment-methods/
+  /// GET /api/v1/user-payment-methods/ (paginated)
   Future<List<UserPaymentMethod>> fetchUserPaymentMethods() async {
     try {
-      final res =
-      await _client.getJson(ApiPath.userPaymentMethods);
-      // Assuming paginated response
+      final res = await _client.getJson(ApiPath.userPaymentMethods);
       final data = res.data['results'] as List? ?? [];
       return data
           .map((e) => UserPaymentMethod.fromJson(e as Map<String, dynamic>))
@@ -75,17 +72,15 @@ class CheckoutService {
 
   /// POST /api/v1/user-payment-methods/
   Future<UserPaymentMethod> saveUserPaymentMethod({
-    required int paymentMethodId,
-    required String providerPaymentId, // e.g., "pm_xxx" from Stripe
-    bool isDefault = true,
+    required int paymentMethodId,           // maps to "payment_method"
+    required String providerPaymentId,      // maps to "provider_payment_method_id"
   }) async {
     try {
       final res = await _client.postJson(
         ApiPath.userPaymentMethods,
         {
-          'payment_method_id': paymentMethodId,
-          'provider_payment_id': providerPaymentId,
-          'is_default': isDefault,
+          'provider_payment_method_id': providerPaymentId,
+          'payment_method': paymentMethodId,
         },
       );
       return UserPaymentMethod.fromJson(res.data);

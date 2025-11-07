@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_state_manager/src/simple/get_view.dart';
+import 'package:grocer_ai/features/profile/transactions/transaction_controller.dart';
+
+import 'model/transaction_model.dart';
 
 /// ---------------------------------------------------------------------------
 /// PALETTE + TYPO
@@ -139,11 +144,15 @@ class _TextStyles {
 /// ROOT SCREEN
 /// ---------------------------------------------------------------------------
 
-class TransactionDetailScreen extends StatelessWidget {
-  const TransactionDetailScreen({super.key});
+class TransactionDetailScreen extends GetView<TransactionController> {
+  final String transactionId;
+  const TransactionDetailScreen({super.key, required this.transactionId});
 
   @override
   Widget build(BuildContext context) {
+
+    final tx = controller.transactions
+        .firstWhereOrNull((t) => t.id.toString() == transactionId);
     // We’re doing a manual chrome (fake status bar + teal app bar) and a
     // fixed bottom bar, so Scaffold with backgroundColor and a Stack.
     return Scaffold(
@@ -154,15 +163,21 @@ class TransactionDetailScreen extends StatelessWidget {
           Positioned.fill(
             top: 111, // matches ~48 status bar + ~63 header block from design
             bottom: 68 + 24, // approximate bottom nav + its vertical padding
-            child: SingleChildScrollView(
+
+            // --- THIS IS THE FIX ---
+            // We must check if 'tx' is null *before* passing it to widgets
+            child: (tx == null)
+                ? const Center(child: Text('Transaction not found.'))
+                : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ===== Transaction details =====
-                  Text('Transaction details', style: _TextStyles.sectionHeading),
+                  Text('Transaction details',
+                      style: _TextStyles.sectionHeading),
                   const SizedBox(height: 16),
-                  const _TransactionDetailsCard(),
+                  _TransactionDetailsCard(tx: tx), // <-- Now this is safe
                   const SizedBox(height: 24),
 
                   // ===== Order list =====
@@ -170,6 +185,8 @@ class TransactionDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Cards list (static demo data from your mock)
+                  // NOTE: This remains static because your API
+                  // does not return the order items on this endpoint.
                   Column(
                     children: const [
                       _OrderListItemPriceOnly(
@@ -204,8 +221,6 @@ class TransactionDetailScreen extends StatelessWidget {
                         itemsText: '3 Item',
                       ),
                       SizedBox(height: 16),
-
-                      // With quantity controls instead of price block
                       _OrderListItemWithQty(
                         title: 'Blue Mountain Coffee Beans',
                         metaLeft: '\$12.99 unit price',
@@ -252,10 +267,11 @@ class TransactionDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
+            // --- END FIX ---
           ),
 
           // HEADER (fake status bar + teal app bar)
-          const _HeaderChrome(txnIdText: 'TXN ID: #565765'),
+          _HeaderChrome(txnIdText: tx?.transactionId ?? 'TXN ID: #...'),
         ],
       ),
     );
@@ -362,57 +378,45 @@ class _HeaderChrome extends StatelessWidget {
 /// ---------------------------------------------------------------------------
 
 class _TransactionDetailsCard extends StatelessWidget {
-  const _TransactionDetailsCard();
+  final ProfilePaymentTransaction tx;
+  const _TransactionDetailsCard({required this.tx});
 
   @override
   Widget build(BuildContext context) {
-    // We'll build rows with vertical spacing 16 between them, with Dividers.
     final rows = <Widget>[
       _TxnRow(
         label: 'Card number',
         rightChild: Text(
-          '1234 1234 1234 1234',
+          // <-- Dynamic data
+          '**** ${tx.userPaymentMethod.brand ?? 'Card'}',
           style: _TextStyles.detailsValue,
         ),
       ),
       _TxnRow(
         label: 'Transfer number',
         rightChild: Text(
-          '4564 4535 7875 2313',
+          tx.transactionId ?? 'N/A', // <-- Dynamic data
           style: _TextStyles.detailsValue,
         ),
       ),
       _TxnRow(
         label: 'Transfer date',
-        rightChild: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('25 Dec 2024', style: _TextStyles.detailsValue),
-            const SizedBox(width: 8),
-            Container(
-              width: 4,
-              height: 4,
-              decoration: const BoxDecoration(
-                color: _Palette.textBullet,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text('6:30pm', style: _TextStyles.detailsValue),
-          ],
+        rightChild: Text(
+          tx.formattedDateTime, // <-- Use model helper
+          style: _TextStyles.detailsValue,
         ),
       ),
       _TxnRow(
         label: 'Recipient',
         rightChild: Text(
-          'Wallmart',
+          tx.userPaymentMethod.paymentMethod.name, // <-- Dynamic data
           style: _TextStyles.detailsValue,
         ),
       ),
       _TxnRow(
         label: 'Amount',
         rightChild: Text(
-          '\$400',
+          '\$${tx.amount}', // <-- Dynamic data
           style: _TextStyles.detailsValue,
         ),
       ),
