@@ -215,7 +215,7 @@ class _TransactionCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final ProfilePaymentTransaction item; // <-- Use model
+  final ProfilePaymentTransaction item;
   final VoidCallback onTap;
 
   @override
@@ -260,9 +260,8 @@ class _TransactionCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            // <-- Use dynamic data
-                            item.order.id
-                                .toString(), // API doesn't send store name here
+                            // --- FIX: Use orderId ---
+                            'Order #${item.orderId}',
                             style: const TextStyle(
                               color: _textStore,
                               fontSize: 16,
@@ -273,7 +272,7 @@ class _TransactionCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '\$${item.amount}', // <-- Use dynamic data
+                          '\$${item.amount}', // <-- Dynamic data
                           style: const TextStyle(
                             color: _textPrimary,
                             fontSize: 16,
@@ -292,7 +291,8 @@ class _TransactionCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            item.userPaymentMethod.displayName, // <-- Use dynamic data
+                            // --- FIX: Show placeholder text ---
+                            'Card Payment', // We no longer have the display name
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               color: _textMethod,

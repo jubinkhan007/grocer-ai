@@ -35,6 +35,7 @@ import 'package:grocer_ai/features/auth/signup_view.dart';
 
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
+import '../features/orders/bindings/order_binding.dart';
 import '../features/orders/views/orders_screen.dart';
 import '../features/profile/security/views/security_screen.dart';
 import '../features/profile/settings/settings_screen.dart';
@@ -163,7 +164,11 @@ class AppPages {
       Get.put(MainShellController());
     })),
     GetPage(name: Routes.offer, page: () => const OfferScreen()),
-    GetPage(name: Routes.order,     page: () => const OrderScreen()),
+    GetPage(
+        name: Routes.order,
+        page: () => const OrderScreen(),
+        binding: OrderBinding() // <-- 2. ADD BINDING
+    ),
     GetPage(name: Routes.help,     page: () => const HelpSupportScreen()),
     GetPage(name: Routes.profile,  page: () => const SettingsScreen()),
     GetPage(

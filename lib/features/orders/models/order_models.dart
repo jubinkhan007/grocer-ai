@@ -1,4 +1,9 @@
-// lib/features/order/views/_order_models.dart
+// lib/features/orders/models/order_models.dart
+
+import 'package:grocer_ai/features/orders/models/order_data_item_model.dart';
+
+import '../../offer/data/provider_model.dart';
+
 class OrderItem {
   final int id;
   final String emoji;
@@ -17,7 +22,7 @@ class OrderItem {
   });
 }
 
-// Quick mock dataset (aligned with your Figma text)
+// ... (mockItems and related lists remain the same) ...
 final mockItems = <OrderItem>[
   OrderItem(id: 1, emoji: '🍜', title: 'Royal Basmati Rice', pricePer: '\$8.75/kg', price: '\$26.25'),
   OrderItem(id: 2, emoji: '🧴', title: 'Sunny Valley Olive Oil', pricePer: '\$75.30/litter', price: '\$23.8'),
@@ -35,39 +40,69 @@ final related = <OrderItem>[
   OrderItem(id: 24, emoji: '🧴', title: 'Maple Leaf Olive Oil', pricePer: '\$75.30/litter', price: '\$23.8'),
 ];
 
-// lib/features/orders/models/order_model.dart
 // This model represents a created order from POST /api/v1/orders/
+// or GET /api/v1/orders/{id}/ or GET /api/v1/orders/last-active/
 class Order {
   final int id;
   final String orderId;
   final String price;
-  final String? discount; // <-- MODIFIED: Added discount
-  final String status; // This will likely be an ID or key
+  final String? discount;
+  final String? redeemFromWallet; // <-- ADDED
+  final String status;
   final String deliveryMethod;
   final String deliveryAddress;
   final DateTime createdAt;
+  final Provider? provider;
+  final List<OrderDataItem> items; // <-- ADDED
 
   Order({
     required this.id,
     required this.orderId,
     required this.price,
-    this.discount, // <-- MODIFIED
+    this.discount,
+    this.redeemFromWallet, // <-- ADDED
     required this.status,
     required this.deliveryMethod,
     required this.deliveryAddress,
     required this.createdAt,
+    this.provider,
+    required this.items, // <-- ADDED
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    Provider? provider;
+    List<OrderDataItem> items = [];
+
+    // Check for provider at top level (from OrderList)
+    if (json['provider'] != null) {
+      provider = Provider.fromJson(json['provider']);
+    }
+
+    // Check for provider and items nested in order_data (from Order detail)
+    if (json['order_data'] is Map) {
+      final orderData = json['order_data'] as Map<String, dynamic>;
+      if (orderData['provider'] != null) {
+        provider = Provider.fromJson(orderData['provider']);
+      }
+      if (orderData['items'] is List) {
+        items = (orderData['items'] as List)
+            .map((item) => OrderDataItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+
     return Order(
       id: json['id'] ?? 0,
       orderId: json['order_id'] ?? '',
       price: json['price'] ?? '0.00',
-      discount: json['discount'], // <-- MODIFIED
+      discount: json['discount'],
+      redeemFromWallet: json['redeem_from_wallet'], // <-- ADDED
       status: json['status']?.toString() ?? 'pending',
       deliveryMethod: json['delivery_method'] ?? '',
       deliveryAddress: json['delivery_address'] ?? '',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      provider: provider,
+      items: items, // <-- ADDED
     );
   }
 }

@@ -3,10 +3,19 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
+import '../core/auth/current_user_service.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/data/auth_repository.dart';
+import '../features/home/home_controller.dart';
 import '../features/notification/controllers/notification_controller.dart';
 import '../features/notification/services/notification_service.dart';
+import '../features/offer/controllers/offer_controller.dart';
+import '../features/offer/services/offer_service.dart';
+import '../features/onboarding/location/location_repository.dart';
+import '../features/orders/controllers/order_controller.dart';
+import '../features/orders/services/order_service.dart';
+import '../features/preferences/preferences_controller.dart';
+import '../features/preferences/preferences_repository.dart'; // <-- 1. IMPORT
 import '../features/profile/controllers/dashboard_preference_controller.dart';
 import '../features/profile/controllers/partner_controller.dart';
 import '../features/profile/controllers/referral_controller.dart';
@@ -29,11 +38,33 @@ class AppBindings extends Bindings {
       await GetStorage.init();
       return GetStorage();
     }, permanent: true);
+    // Storage
+    Get.putAsync<GetStorage>(() async {
+      await GetStorage.init();
+      return GetStorage();
+    }, permanent: true);
+
+// Current user (decoded from JWT)
+    Get.lazyPut<CurrentUserService>(
+          () => CurrentUserService(Get.find<GetStorage>()),
+      fenix: true,
+    );
     Get.lazyPut<MainShellController>(() => MainShellController());
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     // Core clients/repos
     Get.put<DioClient>(DioClient(), permanent: true);
     Get.put<AuthRepository>(AuthRepository(Get.find<DioClient>()), permanent: true);
+
+    // --- 2. ADD PreferencesRepository and PreferencesController ---
+    // These are needed by OfferController, so they must be registered first.
+    // We use Get.put(..., permanent: true) so it's available for the whole app lifecycle.
+    Get.lazyPut<PreferencesRepository>(() => PreferencesRepository(Get.find<DioClient>()), fenix: true);
+    Get.put(PreferencesController(Get.find<PreferencesRepository>()), permanent: true);
+
+    // --- 3. ADD LocationRepository ---
+    Get.lazyPut<LocationRepository>(() => LocationRepository(Get.find<DioClient>()), fenix: true);
+    // --- END ADD ---
+
 
     // Register service BEFORE controller
     Get.lazyPut<ProfileService>(
@@ -95,6 +126,38 @@ class AppBindings extends Bindings {
       fenix: true,
     );
 
+    Get.lazyPut<OrderService>(
+          () => OrderService(Get.find<DioClient>()),
+      fenix: true,
+    );
+    Get.lazyPut<OrderController>(
+          () => OrderController(Get.find<OrderService>()),
+      fenix: true,
+    );
 
+
+    Get.lazyPut<OfferService>(
+          () => OfferService(Get.find<DioClient>()),
+      fenix: true,
+    );
+    Get.lazyPut<OfferController>(
+          () => OfferController(
+        Get.find<OfferService>(),
+        Get.find<ProfileController>(),
+        Get.find<PreferencesController>(), // <-- This will now succeed
+        Get.find<LocationRepository>(),  // <-- This will now succeed
+      ),
+      fenix: true,
+    );
+
+    Get.lazyPut<HomeController>(
+          () => HomeController(
+        Get.find<ProfileController>(),
+        Get.find<WalletController>(),
+        Get.find<LocationRepository>(),
+        Get.find<OrderController>(),
+      ),
+      fenix: true,
+    );
   }
 }

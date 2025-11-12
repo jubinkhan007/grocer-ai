@@ -3,11 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart'; // <-- 1. IMPORT
-import 'package:grocer_ai/features/profile/controllers/referral_controller.dart'; // <-- 2. IMPORT
-import 'package:grocer_ai/features/profile/models/referral_model.dart'; // <-- 3. IMPORT
+import 'package:get/get.dart';
+import 'package:grocer_ai/features/profile/controllers/referral_controller.dart';
+import 'package:grocer_ai/features/profile/models/referral_model.dart';
 import 'package:grocer_ai/features/profile/views/referral_success_dialog.dart';
-import 'package:intl/intl.dart'; // <-- 4. IMPORT
+import 'package:intl/intl.dart';
 
 import 'invite_friends_screen.dart';
 
@@ -27,20 +27,14 @@ const _chipInvitedBg = Color(0xFFFEF1D7);
 const _chipInvitedText = Color(0xFF956703);
 const _dividerShadow = Color(0x2833595B);
 
-// --- 5. MODIFIED: Converted to GetView<ReferralController> ---
 class MyReferralScreen extends GetView<ReferralController> {
   const MyReferralScreen({super.key});
 
-  // --- 6. NEW: Helper to group referrals by date ---
   Map<String, List<Referral>> _groupReferrals(List<Referral> referrals) {
     final groups = <String, List<Referral>>{};
     final formatter = DateFormat('dd MMM yyyy');
     for (final ref in referrals) {
-      DateTime? dt = ref.createdAt;
-      // Fallback if createdAt is null, use update_at from API
-      if (dt == null && json['updated_at'] != null) {
-        dt = DateTime.tryParse(json['updated_at']);
-      }
+      DateTime? dt = ref.createdAt; // <-- Now uses createdAt from model
 
       final dateString = dt != null ? formatter.format(dt) : "Unknown Date";
 
@@ -115,7 +109,7 @@ class MyReferralScreen extends GetView<ReferralController> {
             ),
           ),
 
-          // --- 7. MODIFIED: Dynamic List Content ---
+          // --- Dynamic List Content ---
           Expanded(
             child: Container(
               color: _bgPage,
@@ -172,10 +166,9 @@ class MyReferralScreen extends GetView<ReferralController> {
   }
 }
 
-// --- 8. MODIFIED: _ReferralDaySection takes Referral model ---
 class _ReferralDaySection extends StatelessWidget {
   final String dateLabel;
-  final List<Referral> entries; // <-- MODIFIED
+  final List<Referral> entries;
   const _ReferralDaySection({
     required this.dateLabel,
     required this.entries,
@@ -200,7 +193,7 @@ class _ReferralDaySection extends StatelessWidget {
         Column(
           children: [
             for (int i = 0; i < entries.length; i++) ...[
-              _ReferralRow(data: entries[i]), // <-- MODIFIED
+              _ReferralRow(data: entries[i]),
               if (i != entries.length - 1) const SizedBox(height: 16),
             ],
           ],
@@ -210,9 +203,7 @@ class _ReferralDaySection extends StatelessWidget {
   }
 }
 
-// --- 9. REMOVED: Static _ReferralEntryData ---
-
-// --- 10. MODIFIED: _ReferralStatusKind logic ---
+// ... (_ReferralStatusKind and _ReferralStatusChip remain the same) ...
 enum _ReferralStatusKind { joined, cancelled, invited }
 
 _ReferralStatusKind _kindFromKey(String key) {
@@ -281,27 +272,30 @@ class _ReferralStatusChip extends StatelessWidget {
   }
 }
 
-// --- 11. MODIFIED: _ReferralRow takes Referral model ---
 class _ReferralRow extends StatelessWidget {
   final Referral data;
   const _ReferralRow({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    // API provides 'earned'
     final time = data.createdAt != null
         ? DateFormat('h:mma').format(data.createdAt!)
         : '';
     final amount = '\$${data.amount.toStringAsFixed(0)}';
     final statusKind = _kindFromKey(data.status);
     final cleanAmount = data.amount.toStringAsFixed(0);
-    // API provides 'name' and 'avatar'
-    final String avatarUrl = data.avatar ?? 'https://placehold.co/48x48';
+
+    // --- THIS IS THE FIX for Error 2 ---
+    final String? avatarUrl = data.avatar;
+    final bool hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
+    // --- END FIX ---
+
+    // Use the referred user's name, fallback to the invited name/email
+    final String displayName = data.referred.name ?? data.name ?? data.referred.email;
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () {
-        // Only show congrats dialog if they've earned something
         if (data.amount > 0) {
           showReferralCongratsDialog(
             context,
@@ -321,18 +315,26 @@ class _ReferralRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- MODIFIED: Safely use dynamic avatar URL ---
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: NetworkImage(avatarUrl),
+                color: Colors.grey.shade200,
+                image: hasAvatar
+                    ? DecorationImage(
+                  image: NetworkImage(avatarUrl!),
                   fit: BoxFit.cover,
-                  onError: (e, s) => const Icon(Icons.person), // Fallback
-                ),
+                  onError: (e, s) => {},
+                )
+                    : null,
               ),
+              child: !hasAvatar
+                  ? Icon(Icons.person, size: 24, color: Colors.grey.shade600)
+                  : null,
             ),
+            // --- END MODIFICATION ---
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -343,7 +345,7 @@ class _ReferralRow extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          data.name,
+                          displayName, // <-- Use dynamic name
                           style: const TextStyle(
                             color: _nameText,
                             fontSize: 16,

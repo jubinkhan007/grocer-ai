@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../ui/theme/app_theme.dart'; // only for colors elsewhere if you need
+import '../../../ui/theme/app_theme.dart';
+import '../../shared/teal_app_bar.dart'; // only for colors elsewhere if you need
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -12,143 +13,96 @@ class HelpSupportScreen extends StatelessWidget {
   }
 
 
-
-
-
-  @override
   Widget build(BuildContext context) {
     const _bg = Color(0xFFF4F6F6);
-    const _teal = Color(0xFF33595B);
-    const _divider = Color(0xFFE0E0E0);
-    final padTop = MediaQuery.of(context).padding.top;
-    const _toolbar = 63.0;
 
     return Scaffold(
       backgroundColor: _bg,
 
-      // ===== BODY =====
-      body: CustomScrollView(
-        slivers: [
-          /// Top app bar (48 status + 68 toolbar = 116)
-          SliverAppBar(
-            pinned: true,
-            elevation: 0,
-            backgroundColor: _teal,
-
-            // total height = status bar + 56 (matches standard Figma toolbars)
-            collapsedHeight:  _toolbar,
-            expandedHeight: _toolbar,
-
-            automaticallyImplyLeading: false,
-            flexibleSpace: Container(
-              color: _teal,
-              padding: EdgeInsets.only(top: padTop), // only cover the notch area
-              child: SizedBox(
-                height: _toolbar,
-                child: Row(
-                  children: const [
-                    SizedBox(width: 0),
-                    _BackChevron(), // 20px icon already sized correctly
-                    SizedBox(width: 0),
-                    Text(
-                      'Help & Support',
-                      style: TextStyle(
-                        color: Color(0xFFFEFEFE),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Roboto',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          /// Content
-          SliverToBoxAdapter(
-            child: Padding(
-              // NOTE: bottom padding keeps content above the nav bar + FAB area.
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'We’re here to assist you! Find quick answers to your questions or contact us directly for help.',
-                    style: TextStyle(
-                      color: Color(0xFF212121),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      height: 1.43,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  SizedBox(height: 24),
-
-                  _SectionCard(
-                    title: 'Contact Us',
-                    rows: [
-                      _CardRow(
-                        leading: 'Live Chat',
-                        value: 'Available 24/7 directly in the app.',
-                      ),
-                      _CardRow.divider(),
-                      _CardRow(
-                        leading: 'Phone Support',
-                        value:
-                        'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
-                      ),
-                      _CardRow.divider(),
-                      _CardRow(
-                        leading: 'Email Support',
-                        value: 'Reach us at support@[appname].com.',
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-
-                  _SectionCard(
-                    title: 'Delivery & Returns',
-                    rows: [
-                      _CardRow(
-                        leading: 'Delivery Area',
-                        value: 'Available in most areas within [State(s)].',
-                      ),
-                      _CardRow.divider(),
-                      _CardRow(
-                        leading: 'Returns',
-                        value: 'Return items within 7 days for a full refund.',
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-
-                  _SectionCard(
-                    title: 'Account & Privacy',
-                    rows: [
-                      _CardRow(
-                        leading: 'Update Info',
-                        value: 'Change your details in the profile settings.',
-                      ),
-                      _CardRow.divider(),
-                      _CardRow(
-                        leading: 'Password Reset',
-                        value:
-                        'Tap “Forgot Password?” on the login page to reset.',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+      // ✅ Shared teal header with back & title
+      appBar: const TealTitleAppBar(
+        title: 'Help & Support',
+        showBack: true,
       ),
 
-      /// ===== FAB (64x64 with shadow) =====
+      // ✅ Content unchanged, just under the header
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'We’re here to assist you! Find quick answers to your questions or contact us directly for help.',
+              style: TextStyle(
+                color: Color(0xFF212121),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 1.43,
+                fontFamily: 'Roboto',
+              ),
+            ),
+            SizedBox(height: 24),
+
+            _SectionCard(
+              title: 'Contact Us',
+              rows: [
+                _CardRow(
+                  leading: 'Live Chat',
+                  value: 'Available 24/7 directly in the app.',
+                ),
+                _CardRow.divider(),
+                _CardRow(
+                  leading: 'Phone Support',
+                  value:
+                  'Call us at 1-800-123-4567, Mon–Fri, 8 AM–8 PM EST.',
+                ),
+                _CardRow.divider(),
+                _CardRow(
+                  leading: 'Email Support',
+                  value: 'Reach us at support@[appname].com.',
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+
+            _SectionCard(
+              title: 'Delivery & Returns',
+              rows: [
+                _CardRow(
+                  leading: 'Delivery Area',
+                  value: 'Available in most areas within [State(s)].',
+                ),
+                _CardRow.divider(),
+                _CardRow(
+                  leading: 'Returns',
+                  value: 'Return items within 7 days for a full refund.',
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+
+            _SectionCard(
+              title: 'Account & Privacy',
+              rows: [
+                _CardRow(
+                  leading: 'Update Info',
+                  value: 'Change your details in the profile settings.',
+                ),
+                _CardRow.divider(),
+                _CardRow(
+                  leading: 'Password Reset',
+                  value:
+                  'Tap “Forgot Password?” on the login page to reset.',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+
+      // ✅ FAB & (optional) bottom bar unchanged
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
-        // matches the mock’s ~10px bottom & ~6px right visual gap
         padding: const EdgeInsets.only(bottom: 10, right: 6),
         child: Container(
           width: 64,
@@ -165,15 +119,14 @@ class HelpSupportScreen extends StatelessWidget {
           ),
           child: FloatingActionButton(
             elevation: 0,
-            backgroundColor: _teal,
+            backgroundColor: Color(0xFF33595B),
             shape: const CircleBorder(),
             onPressed: () => _openLiveChat(context),
-            child: const Icon(Icons.support_agent, color: Colors.white, size: 30),
+            child:
+            const Icon(Icons.support_agent, color: Colors.white, size: 30),
           ),
         ),
       ),
-
-      /// ===== Bottom bar (exact layout & shadow) =====
       // bottomNavigationBar: const _HelpBottomBar(),
     );
   }

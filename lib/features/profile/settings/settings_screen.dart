@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/app_routes.dart';
 import '../../../shell/main_shell_controller.dart';
+import '../../shared/teal_app_bar.dart';
 import '../controllers/profile_controller.dart';
 import '../models/personal_info_model.dart';
 import '../models/wallet_model.dart';
@@ -11,6 +13,7 @@ import '../static_pages/static_page_binding.dart';
 import '../views/about_us_screen.dart';
 import '../views/dashboard_preference_sheet.dart';
 import '../views/logout_dialog.dart';
+import '../views/partner_sheet.dart';
 import '../views/personal_info_sheet.dart';
 import '../views/terms_conditions_screen.dart';
 import '../wallet/wallet_controller.dart';
@@ -35,30 +38,33 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Light status icons over dark teal strip.
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: _headerTeal,  // Same teal color for the status bar
-      statusBarIconBrightness: Brightness.light,  // Ensure icons are white on teal
-      statusBarBrightness: Brightness.dark,  // iOS handling
-    ));
-
     final media = MediaQuery.of(context);
-    // --- 7. ADD Get.find() CALLS HERE ---
+
+    // Controllers & loading logic (unchanged)
     final shell = Get.find<MainShellController>();
     final profileController = Get.find<ProfileController>();
     final walletController = Get.find<WalletController>();
 
-    // Load data when the screen is built
+    // Load data when the screen is built (existing behavior)
     profileController.loadPersonalInfo();
     walletController.loadWallet();
 
+    // ✅ Status bar style: white icons on dark strip
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: _statusTeal, // dark top strip like Figma
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+
     return Scaffold(
       backgroundColor: _pageBg,
-      //bottomNavigationBar: const _BottomNavBar(),
+      // No standard AppBar; we custom-draw the status strip + teal header stack
       body: Column(
         children: [
+          // ===== Dark status strip (exactly like Figma) =====
           _StatusStrip(paddingTop: media.padding.top),
 
+          // ===== Scrollable content =====
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
@@ -67,22 +73,18 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header block (teal + avatar/name/email + credit card)
+                  // Teal header with avatar, name, email, credit card (unchanged)
                   Obx(() {
                     return _ProfileHeader(
-                      // Pass dynamic data down
                       info: profileController.personalInfo.value,
                       wallet: walletController.wallet.value,
                     );
                   }),
 
-                  // Figma math:
-                  // header stack ends visually at y=267,
-                  // first tile list starts at y=281,
-                  // → ~14px gap, NOT 62.
+                  // Same ~14px gap from header to first tile as in Figma
                   const SizedBox(height: 14),
 
-                  // Settings tiles (each tile = white card radius 8, 16 padding)
+                  // Settings tiles (unchanged)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -97,7 +99,12 @@ class SettingsScreen extends StatelessWidget {
                           label: 'Partner',
                           leading: Icons.group_outlined,
                           onTap: () {
-                            // TODO: hook up Partner nav when available
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const PartnerSheet(),
+                            );
                           },
                         ),
                         const SizedBox(height: 16),
@@ -118,7 +125,8 @@ class SettingsScreen extends StatelessWidget {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (_) => const DashboardPreferenceSheet(),
+                              builder: (_) =>
+                              const DashboardPreferenceSheet(),
                             );
                           },
                         ),
@@ -139,8 +147,6 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         _SettingsTile(
                           label: 'Referral',
-                          // Figma uses a little node/graph icon. We’ll
-                          // approximate with share_outlined.
                           leading: Icons.share_outlined,
                           onTap: () {
                             final shell = Get.find<MainShellController>();
@@ -151,7 +157,6 @@ class SettingsScreen extends StatelessWidget {
                         _SettingsTile(
                           label: 'About Us',
                           leading: Icons.info_outline,
-                          // --- MODIFIED: Use StaticPageBinding ---
                           onTap: () => Get.to(
                                 () => const AboutUsScreen(),
                             binding:
@@ -162,7 +167,6 @@ class SettingsScreen extends StatelessWidget {
                         _SettingsTile(
                           label: 'Terms & Conditions',
                           leading: Icons.description_outlined,
-                          // --- MODIFIED: Use StaticPageBinding ---
                           onTap: () => Get.to(
                                 () => const TermsConditionsScreen(),
                             binding: StaticPageBinding(
@@ -173,7 +177,7 @@ class SettingsScreen extends StatelessWidget {
                         _SettingsTile(
                           label: 'Help & support',
                           leading: Icons.help_outline,
-                          onTap: () => Get.toNamed('/support'),
+                          onTap: () => Get.toNamed(Routes.help),
                         ),
                         const SizedBox(height: 16),
                         _SettingsTile(
@@ -190,8 +194,12 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+
+      // bottomNavigationBar: const _BottomNavBar(), // keep as-is if you re-enable
     );
   }
+
+
   static void _showPersonalInfoSheet(BuildContext context) {
     final controller = Get.find<ProfileController>();
 

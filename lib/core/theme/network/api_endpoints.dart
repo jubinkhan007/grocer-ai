@@ -37,6 +37,12 @@ class ApiPath {
   static const String profileLocations = '/api/v1/profile/locations/';
   static const products = '/api/v1/products/';
   static const profileWallet = '/api/v1/profile/wallet/';
+  static const profileUsers = '/api/v1/profile/users/';
+
+
+  //offer
+
+  static const providers = '/api/v1/providers/';
 
 
   // profile-transaction
@@ -72,5 +78,9 @@ class ApiPath {
 
 // Static_pages
   static const String staticPages = '/api/v1/static-pages/';
+
+  static const String faqs = '$v1/faqs/';
+  static const String flowSteps = '$v1/flow-steps/';
+
 
 }

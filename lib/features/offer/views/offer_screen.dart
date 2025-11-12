@@ -1,69 +1,22 @@
 // lib/features/offer/views/offer_screen.dart
 
-import 'package:dio/dio.dart'; // Import dio
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:grocer_ai/app/app_routes.dart';
 import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
 
 // Import new models and service
+import '../../shared/teal_app_bar.dart';
+import '../controllers/offer_controller.dart';
 import '../data/product_model.dart';
 import '../data/provider_model.dart';
 import '../services/offer_service.dart';
 
-class OfferScreen extends StatefulWidget {
+class OfferScreen extends GetView<OfferController> {
   const OfferScreen({super.key});
-
-  @override
-  State<OfferScreen> createState() => _OfferScreenState();
-}
-
-const kTeal = Color(0xFF33595B);
-const kAppBarH = 92.0;
-class _OfferScreenState extends State<OfferScreen> {
-  int _tab = 1; // (change to whatever your FFBottomNav index is for Offer)
-
-  // 🔌 Service and state variables
-  late final OfferService _offerService;
-  bool _isLoading = true;
-  List<ProviderWithProducts> _offerData = [];
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the service with a Dio instance
-    _offerService = OfferService(Dio());
-    _loadOffers();
-  }
-
-  // 🔌 API hook
-  Future<void> _loadOffers() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final data = await _offerService.getOffers();
-      setState(() {
-        _offerData = data;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = "Failed to load offers. Please try again.";
-        _isLoading = false;
-        print(e); // For debugging
-      });
-    }
-  }
-
-  void _onNavTap(int i) {
-    // ask the shell to switch tab
-    Get.find<MainShellController>().goTo(i);
-  }
 
   // Helper to map API Product to UI _P model
   _P _mapProductToP(Product product) {
@@ -73,217 +26,130 @@ class _OfferScreenState extends State<OfferScreen> {
 
     return _P(
       title: product.name,
-      // Format prices to match your original UI
       priceNow: '\$${priceNowNum.toStringAsFixed(priceNowNum.truncateToDouble() == priceNowNum ? 0 : 2)}',
-      priceOld: '\$${priceOldNum.toStringAsFixed(priceOldNum.truncateToDouble() == priceOldNum ? 0 : 2)}',
+      priceOld: '\$${priceOldNum.toStringAsFixed(priceOldNum.truncateToDouble() == priceNowNum ? 0 : 2)}',
       save: 'Save $discount%',
       image: product.image, // This is now a URL
     );
   }
 
+  // --- 1. THIS IS THE FIX ---
   // Helper to dynamically build the store sections
+  // This now returns a list of RenderBox widgets, NOT Slivers.
   List<Widget> _buildStoreSections() {
     final List<Widget> sections = [];
 
-    if (_offerData.isEmpty && !_isLoading) {
-      sections.add(const SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.all(48.0),
-          child: Center(child: Text("No offers available right now.")),
-        ),
+    if (controller.offerData.isEmpty && !controller.isLoading.value) {
+      // --- MODIFIED: Removed SliverToBoxAdapter ---
+      sections.add(const Padding(
+        padding: EdgeInsets.all(48.0),
+        child: Center(child: Text("No offers available right now.")),
       ));
       return sections;
     }
 
-    for (int i = 0; i < _offerData.length; i++) {
-      final item = _offerData[i];
+    for (int i = 0; i < controller.offerData.length; i++) {
+      final item = controller.offerData[i];
       final productsAsP = item.products.map((p) => _mapProductToP(p)).toList();
 
-      sections.add(SliverToBoxAdapter(
-        child: _StoreSection(
-          logo: item.provider.logo, // This is now a URL
-          title: item.provider.name,
-          products: productsAsP,
-        ),
+      // --- MODIFIED: Removed SliverToBoxAdapter ---
+      sections.add(_StoreSection(
+        logo: item.provider.logo,
+        title: item.provider.name,
+        products: productsAsP,
       ));
 
-      // Add divider if not the last item
-      if (i < _offerData.length - 1) {
-        sections.add(const SliverToBoxAdapter(child: _DividerGutter()));
+      if (i < controller.offerData.length - 1) {
+        // --- MODIFIED: Removed SliverToBoxAdapter ---
+        sections.add(const _DividerGutter());
       }
     }
 
-    // Add final padding
-    sections.add(const SliverToBoxAdapter(child: SizedBox(height: 24)));
+    // --- MODIFIED: Removed SliverToBoxAdapter ---
+    sections.add(const SizedBox(height: 120)); // Padding for nav bar
     return sections;
   }
+  // --- END FIX ---
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(20 + 72),
+        child: Obx(() => TealHomeAppBar(
+          name: controller.userName.value,
+          location: controller.location.value,
+          showDot: controller.hasUnreadNotifications.value,
+          onBellTap: () {
+            Get.toNamed(Routes.notifications);
+          },
+        )),
+      ),
       body: ColoredBox(
-          color: const Color(0xFFF4F6F6),
-          child: SafeArea(
-              top: false,
-              bottom: false,
-              child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 430),
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverAppBar(
-                          backgroundColor: kTeal,
-                          surfaceTintColor: Colors.transparent,
-                          elevation: 0,
-                          scrolledUnderElevation: 0,
-                          shadowColor: Colors.transparent,
-                          pinned: true,
-
-                          // 👇 Compact heights
-                          toolbarHeight: kAppBarH,
-                          expandedHeight: kAppBarH,
-                          collapsedHeight: kAppBarH,
-
-                          titleSpacing: 0,
-                          systemOverlayStyle: const SystemUiOverlayStyle(
-                            statusBarColor: kTeal,
-                            statusBarIconBrightness: Brightness.light,
-                            statusBarBrightness: Brightness.dark, // iOS
-                          ),
-                          title: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), // was 16
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center, // keep text vertically centered
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: const [
-                                      Text.rich(TextSpan(children: [
-                                        TextSpan(text: 'Hi,', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400, color: Color(0xFFFEFEFE))),
-                                        TextSpan(text: ' '),
-                                        TextSpan(text: 'Joshep', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFFEFEFE))),
-                                      ])),
-                                      SizedBox(height: 4), // tighter
-                                      Row(
-                                        children: [
-                                          Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFE9E9E9)),
-                                          SizedBox(width: 6),
-                                          Text('Savar, Dhaka', style: TextStyle(fontSize: 13, color: Color(0xFFE9E9E9))),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    onPressed: () {},
-                                    icon: Icon(Icons.notifications_none_rounded, color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Handle Loading and Error states
-                        if (_isLoading)
-                          const SliverFillRemaining(
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else if (_error != null)
-                          SliverFillRemaining(
-                            child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Text(_error!,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(color: Colors.red)),
-                                )),
-                          )
-                        else
-                        // Dynamically build store sections
-                          ..._buildStoreSections(),
-                      ],
-                    ),
-                  )))),
-      // bottomNavigationBar: FFBottomNav(currentIndex: _tab, onTap: _onNavTap),
-    );
-  }
-}
-
-/// Header: teal, “Hi, Joshep” + location + bell
-/// This widget is no longer used by SliverAppBar, but kept for reference
-class _OfferHeader extends StatelessWidget {
-  const _OfferHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.teal,
-      padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Hi, Joshep',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700)),
-                      SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined,
-                              color: Colors.white70, size: 18),
-                          SizedBox(width: 6),
-                          Text('Savar, Dhaka',
-                              style:
-                              TextStyle(color: Colors.white70, fontSize: 14)),
-                        ],
-                      )
-                    ],
+        color: const Color(0xFFF4F6F6),
+        child: SafeArea(
+          top: false,  // app bar already handles status bar
+          bottom: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: CustomScrollView( // <-- This is line 94
+                slivers: [
+                  // gap between teal header and content (matches home/dashboard)
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 24),
                   ),
-                ),
-                Stack(
-                  children: [
-                    IconButton(
-                      onPressed: () {}, // TODO: open notifications
-                      icon: const Icon(Icons.notifications_none_rounded,
-                          color: Colors.white, size: 26),
-                    ),
-                    Positioned(
-                      right: 10,
-                      top: 10,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: Colors.red, shape: BoxShape.circle),
+
+                  // --- 2. THIS IS THE FIX ---
+                  Obx(() {
+                    if (controller.isLoading.value) {
+                      // --- MODIFIED: Use SliverToBoxAdapter ---
+                      return const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 300, // Give it some height
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+                    }
+
+                    if (controller.error.value != null) {
+                      // --- MODIFIED: Use SliverToBoxAdapter ---
+                      return SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 300,
+                          child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Text(controller.error.value!,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.red)),
+                              )),
+                        ),
+                      );
+                    }
+
+                    // This is now correct, as _buildStoreSections()
+                    // returns a List<Widget> of RenderBoxes.
+                    return SliverList( // <-- This is line 176
+                      delegate: SliverChildListDelegate(
+                        _buildStoreSections(),
                       ),
-                    )
-                  ],
-                )
-              ],
+                    );
+                  }),
+                  // --- END FIX ---
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ... (Rest of the file: _StoreSection, _P, _ProductCard, _DividerGutter, etc. are all unchanged) ...
 
 /// A store section with logo + title + horizontal product list
 class _StoreSection extends StatelessWidget {
@@ -306,14 +172,12 @@ class _StoreSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              // *** MODIFIED HERE: Use Image.network for the logo ***
               SizedBox(
                 width: 20,
                 height: 20,
                 child: Image.network(
                   logo,
                   fit: BoxFit.contain,
-                  // Add error/loading builders for robustness
                   loadingBuilder: (context, child, progress) {
                     return progress == null
                         ? child
@@ -421,11 +285,9 @@ class _ProductCard extends StatelessWidget {
               SizedBox(
                 width: 100,
                 height: 76,
-                // *** MODIFIED HERE: Use Image.network for the product image ***
                 child: Image.network(
                   p.image,
                   fit: BoxFit.contain,
-                  // Add error/loading builders for robustness
                   loadingBuilder: (context, child, progress) {
                     return progress == null
                         ? child
@@ -493,87 +355,6 @@ class _DividerGutter extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 24),
       child: Divider(height: 1, thickness: 1, color: Color(0xFFE6EAEB)),
-    );
-  }
-}
-
-// ... (Rest of your helper widgets _CollapsingHeaderTitle and _HeaderRow remain unchanged) ...
-
-class _CollapsingHeaderTitle extends StatelessWidget {
-  const _CollapsingHeaderTitle();
-
-  @override
-  Widget build(BuildContext context) {
-    final settings =
-    context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
-
-    // Fallback if not inside a FlexibleSpaceBar
-    double t = 0.0;
-    if (settings != null && settings.maxExtent > settings.minExtent) {
-      t = ((settings.currentExtent - settings.minExtent) /
-          (settings.maxExtent - settings.minExtent))
-          .clamp(0.0, 1.0);
-    }
-
-    final bool expanded = t > 0.6; // threshold where we switch layouts
-    return _HeaderRow(compact: !expanded);
-  }
-}
-
-class _HeaderRow extends StatelessWidget {
-  const _HeaderRow({required this.compact});
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hi, Joshep',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: compact ? 20 : 24, // +2 when expanded
-                  fontWeight: FontWeight.w700,
-                  height: compact ? 1.15 : 1.20,
-                ),
-              ),
-              const SizedBox(height: 8), // +2 for breathing room
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on_outlined,
-                      color: Colors.white70, size: 18),
-                  SizedBox(width: 8),
-                  Text('Savar, Dhaka',
-                      style: TextStyle(color: Colors.white70, fontSize: 16)), // +2
-                ],
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          // align bell a bit lower
-          padding: const EdgeInsets.only(top: 4),
-          child: Stack(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_none_rounded,
-                    color: Colors.white, size: 26),
-              ),
-              const Positioned(
-                  right: 10,
-                  top: 10,
-                  child: CircleAvatar(radius: 4, backgroundColor: Colors.red)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

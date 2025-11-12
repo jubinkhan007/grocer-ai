@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -19,40 +21,66 @@ const _nextBtnBg = Color(0xFF33595B);
 class OnboardingView extends GetView<OnboardingController> {
   const OnboardingView({super.key});
 
+  double _topBarHeight(BuildContext context) {
+    const figma = 48.0;                       // desired visible strip
+    final pad = MediaQuery.of(context).padding.top;
+    // ensure we never paint less than the system inset
+    return pad > figma ? pad : figma;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // The plugin shows a dark status area with light icons.
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: _statusBarBg,
-        statusBarBrightness: Brightness.dark, // iOS
-        statusBarIconBrightness: Brightness.light, // Android
-      ),
-    );
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: _statusBarBg,           // teal
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
 
     return Scaffold(
       backgroundColor: _screenBg,
-      body: PageView.builder(
-        controller: controller.pageController,
-        physics: const ClampingScrollPhysics(),
-        onPageChanged: controller.onChanged,
-        itemCount: controller.pages.length,
-        itemBuilder: (context, index) {
-          final page = controller.pages[index];
-          final total = controller.pages.length;
+      body: Stack(
+        children: [
+          // your existing PageView
+          PageView.builder(
+            controller: controller.pageController,
+            physics: const ClampingScrollPhysics(),
+            onPageChanged: controller.onChanged,
+            itemCount: controller.pages.length,
+            itemBuilder: (context, index) {
+              final page = controller.pages[index];
+              final total = controller.pages.length;
+              return _OnboardingSlideScreen(
+                page: page,
+                pageIndex: index,
+                totalPages: total,
+                pageController: controller.pageController,
+                onSkip: controller.skip,
+                onNext: controller.next,
+              );
+            },
+          ),
 
-          return _OnboardingSlideScreen(
-            page: page,
-            pageIndex: index,
-            totalPages: total,
-            onSkip: controller.skip,
-            onNext: controller.next,
-          );
-        },
+          // SINGLE teal status bar fill (exactly like Figma)
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: const SystemUiOverlayStyle(
+                statusBarColor: _statusBarBg,
+                statusBarIconBrightness: Brightness.light,
+                statusBarBrightness: Brightness.dark,
+              ),
+              child: Container(
+                height: _topBarHeight(context),   // <-- 48px or larger for notches
+                color: _statusBarBg,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
 
 /// This builds ONE slide exactly like the plugin layout
 /// This builds ONE slide exactly like the plugin layout,
@@ -65,6 +93,7 @@ class _OnboardingSlideScreen extends StatelessWidget {
     required this.totalPages,
     required this.onSkip,
     required this.onNext,
+    required this.pageController,
   });
 
   final OnbPage page;
@@ -72,6 +101,14 @@ class _OnboardingSlideScreen extends StatelessWidget {
   final int totalPages;
   final VoidCallback onSkip;
   final VoidCallback onNext;
+  final PageController pageController;
+
+  double _topBarHeight(BuildContext context) {
+    const figma = 48.0;                       // desired visible strip
+    final pad = MediaQuery.of(context).padding.top;
+    // ensure we never paint less than the system inset
+    return pad > figma ? pad : figma;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,18 +161,18 @@ class _OnboardingSlideScreen extends StatelessWidget {
                 ),
 
                 /// ===== dark status bar strip (48px tall in plugin) =====
-                const Positioned(
-                  left: 0,
-                  top: 0,
-                  width: figmaW,
-                  height: 48,
-                  child: ColoredBox(color: _statusBarBg),
-                ),
+                // const Positioned(
+                //   left: 0,
+                //   top: 0,
+                //   width: figmaW,
+                //   height: 48,
+                //   child: ColoredBox(color: _statusBarBg),
+                // ),
 
                 /// ===== "SKIP >" =====
                 Positioned(
                   left: 356,
-                  top: 72,
+                  top: (_topBarHeight(context) - 48) + 56, // = 56px below the 48px strip; stays tight on all devices
                   child: InkWell(
                     onTap: onSkip,
                     borderRadius: BorderRadius.circular(4),
@@ -202,7 +239,7 @@ class _OnboardingSlideScreen extends StatelessWidget {
                         children: [
                           _PluginProgressDots(
                             total: totalPages,
-                            current: pageIndex,
+                            pageController: pageController, // <-- pass controller, not `current`
                           ),
                           _PluginNextButton(onTap: onNext),
                         ],
@@ -231,127 +268,171 @@ class _OnboardingSlideScreen extends StatelessWidget {
 class _PluginProgressDots extends StatelessWidget {
   const _PluginProgressDots({
     required this.total,
-    required this.current,
+    required this.pageController,
   });
 
   final int total;
-  final int current;
+  final PageController pageController;
+
+  // Figma tokens for the indicator
+  static const double _dot  = 8.0;
+  static const double _gap  = 8.0;
+  static const double _lead = 16.0;  // small left breathing room like the prototype
+  static const double _trackH = 16.0;
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
+    final trackW = _lead + total * _dot + (total - 1) * _gap;
 
-    for (int i = 0; i < total; i++) {
-      if (i == current) {
-        // active segment = 24px line (2px tall) + 8x8 solid dot
-        children.add(
-          SizedBox(
-            width: 32, // 24 line + 8 dot overlaps visually
-            height: 8,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  left: 0,
-                  top: 3,
-                  child: Container(
-                    width: 24,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: _dotActiveColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  top: 0,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: _dotActiveColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else {
-        // faded circle 8x8 @ 40% alpha of same teal tone
-        children.add(
-          Opacity(
-            opacity: 0.40,
-            child: Container(
-              margin: const EdgeInsets.only(left: 8),
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: _dotInactiveColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        );
-      }
-    }
+    return SizedBox(
+      width: trackW,
+      height: _trackH,
+      child: AnimatedBuilder(
+        animation: pageController,
+        builder: (context, _) {
+          double page = 0;
+          if (pageController.hasClients) {
+            page = pageController.page ?? pageController.initialPage.toDouble();
+          }
+          page = page.clamp(0.0, (total - 1).toDouble());
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: children,
+          // Distance between dot centers
+          const base = _dot + _gap;
+          final i = page.floor();
+          final t = page - i; // 0..1 between i and i+1
+
+          // Lerp the *center* between the two base dots (keeps perfect alignment)
+          final fromCenter = _lead + i * base + _dot / 2;
+          final toCenter   = _lead + (i + 1) * base + _dot / 2;
+          final centerX    = lerpDouble(fromCenter, toCenter, t)!;
+
+          return CustomPaint(
+            size: Size(trackW, _trackH),
+            painter: _DotsPainter(
+              total: total,
+              centerX: centerX,
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
-/// "Next" button from plugin:
-/// width: 102, height: 44, radius: 8, bg #33595B
-/// Text: "Next" 16/600 white, + chevrons
-class _PluginNextButton extends StatelessWidget {
-  const _PluginNextButton({required this.onTap});
+class _DotsPainter extends CustomPainter {
+  _DotsPainter({
+    required this.total,
+    required this.centerX,
+  });
 
+  final int total;
+  final double centerX;
+
+  static const double _dot  = 8.0;
+  static const double _gap  = 8.0;
+  static const double _lead = 16.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final basePaint = Paint()
+      ..color = _dotInactiveColor.withOpacity(0.40)
+      ..style = PaintingStyle.fill;
+    final activePaint = Paint()
+      ..color = _dotActiveColor
+      ..style = PaintingStyle.fill;
+
+    final cy = size.height / 2; // 8px track center
+
+    // Draw base faded dots
+    double cx = _lead + _dot / 2;
+    for (int i = 0; i < total; i++) {
+      canvas.drawCircle(Offset(cx, cy), _dot / 2, basePaint);
+      cx += _dot + _gap;
+    }
+
+    // Active segment = short rounded line + solid dot at its end
+    // Segment's left so that the active DOT CENTER is at +20 from left.
+    final segLeft = centerX - 20.0;
+
+    // 24px rounded line (2px tall). Right before the dot.
+    final lineRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(segLeft, cy - 1, 24, 2),
+      const Radius.circular(20),
+    );
+    canvas.drawRRect(lineRect, activePaint);
+
+    // Solid 8×8 dot (center aligned to the moving centerX)
+    canvas.drawCircle(Offset(centerX, cy), _dot / 2, activePaint);
+  }
+
+  @override
+  bool shouldRepaint(_DotsPainter oldDelegate) =>
+      oldDelegate.centerX != centerX || oldDelegate.total != total;
+}
+
+// ──────────────────────────────────────────────────────────────
+// "Next" button: 102×44, radius 8, white text + double chevron
+// ──────────────────────────────────────────────────────────────
+class _PluginNextButton extends StatefulWidget {
+  const _PluginNextButton({required this.onTap});
   final VoidCallback onTap;
 
   @override
+  State<_PluginNextButton> createState() => _PluginNextButtonState();
+}
+
+class _PluginNextButtonState extends State<_PluginNextButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minWidth: 102, // Figma button width
-        minHeight: 44, // Figma button height
-      ),
-      child: Material(
-        color: const Color(0xFF33595B),
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
+    return SizedBox(
+      width: 102,
+      height: 44,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 80),
+        scale: _pressed ? 0.98 : 1.0,
+        child: Material(
+          color: _nextBtnBg,
           borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Next',
-                  style: TextStyle(
-                    color: Color(0xFFFEFEFE),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Roboto',
-                    height: 1.2,
+          child: InkWell(
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTap: () {
+              setState(() => _pressed = false);
+              widget.onTap();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Next',
+                    style: TextStyle(
+                      color: Color(0xFFFEFEFE),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Roboto',
+                      height: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // this replaces the two Icons.chevron_right_rounded
-                Image.asset(
-                  'assets/icons/chevron_double_right.png', // <-- your asset path
-                  width: 16,
-                  height: 16,
-                  fit: BoxFit.contain,
-                  color: const Color(0xFFFEFEFE), // forces it to render white
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  // Use your asset; falls back to icon if missing.
+                  Image.asset(
+                    'assets/icons/chevron_double_right.png',
+                    width: 16,
+                    height: 16,
+                    color: const Color(0xFFFEFEFE),
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.double_arrow_rounded,
+                      size: 16,
+                      color: Color(0xFFFEFEFE),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

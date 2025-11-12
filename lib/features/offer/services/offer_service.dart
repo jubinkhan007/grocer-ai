@@ -1,6 +1,8 @@
 // lib/features/offer/services/offer_service.dart
 
 import 'package:dio/dio.dart';
+import 'package:grocer_ai/core/theme/network/api_endpoints.dart';
+import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import '../data/provider_model.dart';
 import '../data/product_model.dart';
 
@@ -13,17 +15,18 @@ class ProviderWithProducts {
 }
 
 class OfferService {
-  final Dio _dio;
-  // Base URL from your endpoints
-  final String _baseUrl = "http://45.88.223.47:8000/api/v1";
+  // --- MODIFIED: Use DioClient ---
+  final DioClient _dioClient;
 
-  OfferService(this._dio);
+  // --- MODIFIED: Use DioClient ---
+  OfferService(this._dioClient);
 
   /// Fetches all providers, then fetches products for each provider.
   Future<List<ProviderWithProducts>> getOffers() async {
     try {
       // 1. Fetch all providers
-      final providerResponse = await _dio.get('$_baseUrl/providers/');
+      // --- MODIFIED: Use _dioClient and ApiPath ---
+      final providerResponse = await _dioClient.getJson(ApiPath.providers);
       final providerList = ProviderListResponse.fromJson(providerResponse.data).results;
 
       // 2. Fetch products for each provider concurrently
@@ -47,7 +50,9 @@ class OfferService {
   /// Helper to fetch products for a single provider and combine them.
   Future<ProviderWithProducts> _getProductsForProvider(Provider provider) async {
     try {
-      final productResponse = await _dio.get('$_baseUrl/providers/${provider.id}/products/');
+      // --- MODIFIED: Use _dioClient and ApiPath ---
+      // API spec shows /api/v1/providers/{id}/products/
+      final productResponse = await _dioClient.getJson('${ApiPath.providers}${provider.id}/products/');
       final productList = ProductListResponse.fromJson(productResponse.data).results;
 
       return ProviderWithProducts(provider: provider, products: productList);

@@ -1,3 +1,4 @@
+// lib/features/orders/widgets/orders_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -153,7 +154,9 @@ class HistoryGroup extends StatelessWidget {
   });
 
   final String dateLabel;
-  final List<OrderTileData> tiles;
+  // --- THIS IS THE FIX ---
+  final List<Widget> tiles;
+  // --- END FIX ---
 
   @override
   Widget build(BuildContext context) {
@@ -172,12 +175,16 @@ class HistoryGroup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          ...tiles.map((t) => OrderTile(data: t)).toList(),
+          // --- THIS IS THE FIX ---
+          // Just render the list of widgets directly
+          ...tiles,
+          // --- END FIX ---
         ],
       ),
     );
   }
 }
+
 
 /// ===== Order tile (used for both screens) =====
 enum OrderStatus { onTheWay, completed, cancelled }

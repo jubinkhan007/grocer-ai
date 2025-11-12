@@ -96,11 +96,14 @@ class MainShellController extends GetxController {
     // 1. jump to Profile tab (index 4 in your shell)
     goTo(4);
 
-    // 2. push MyReferralScreen onto THAT tab's own navigator stack
+    // --- THIS IS THE FIX ---
+    // 2. push MyReferralScreen using GetPageRoute and its binding
     navKeys[4].currentState?.push(
-      MaterialPageRoute(
-        builder: (_) => const MyReferralScreen(),
+      GetPageRoute(
+        page: () => const MyReferralScreen(),
+        binding: ReferralBinding(), // <-- This is the fix
       ),
     );
+    // --- END FIX ---
   }
 }

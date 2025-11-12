@@ -1,6 +1,12 @@
+// lib/features/profile/views/referral_summary_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+// --- 1. IMPORT NEW MODELS AND CONTROLLER ---
+import 'package:grocer_ai/features/profile/controllers/referral_summary_controller.dart';
+import 'package:grocer_ai/features/profile/models/faq_model.dart';
+import 'package:grocer_ai/features/profile/models/flow_step_model.dart';
+// --- END IMPORT ---
 
 import '../../../shell/main_shell_controller.dart';
 
@@ -29,7 +35,9 @@ const _shareBg = Color(0xFFE6EAEB); // circle behind the share arrow
 
 const _stepsBg = Color(0xFFE6EAEB); // pale grey callout bg
 final shell = Get.find<MainShellController>();
-class ReferralSummaryScreen extends StatelessWidget {
+
+// --- 2. MODIFIED: Converted to GetView<ReferralSummaryController> ---
+class ReferralSummaryScreen extends GetView<ReferralSummaryController> {
   const ReferralSummaryScreen({super.key});
 
   @override
@@ -42,14 +50,13 @@ class ReferralSummaryScreen extends StatelessWidget {
     ));
 
     final media = MediaQuery.of(context);
+    // Data is loaded by the controller's onInit
 
     return Scaffold(
-      // DO NOT add bottomNavigationBar here.
-      // MainShell shows FFBottomNav underneath this route.
       backgroundColor: _bgPage,
       body: Column(
         children: [
-          /// ===== TOP STATUS STRIP (matches dark 48px-ish bar in Figma) =====
+          /// ===== TOP STATUS STRIP =====
           Container(
             width: double.infinity,
             color: _tealStatus,
@@ -57,16 +64,13 @@ class ReferralSummaryScreen extends StatelessWidget {
               top: media.padding.top, // notch / status inset
               left: 24,
               right: 24,
-              bottom: 12, // Figma shows ~48 total height w/ time row spacing
+              bottom: 12,
             ),
-            // We won't try to fake the exact "9:41   signal battery" row.
-            // Leaving this empty keeps the tealStatus height visually correct.
           ),
 
           /// ===== REST OF SCREEN SCROLLS =====
           Expanded(
             child: SingleChildScrollView(
-              // keep room so the last FAQ row isn't hidden by shell nav bar
               padding: const EdgeInsets.only(bottom: 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,12 +81,9 @@ class ReferralSummaryScreen extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // teal background fill
                         Positioned.fill(
                           child: Container(color: _tealHeader),
                         ),
-
-                        // header text / back arrow / chip (24px horizontal padding)
                         Positioned(
                           left: 24,
                           right: 24,
@@ -94,7 +95,6 @@ class ReferralSummaryScreen extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // back arrow (14x20 in Figma, but we’ll use 24x24 tap target)
                                   GestureDetector(
                                     behavior: HitTestBehavior.opaque,
                                     onTap: () {
@@ -114,8 +114,6 @@ class ReferralSummaryScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-
-                                  // "Refer your friends"
                                   const Text(
                                     'Refer your friends',
                                     style: TextStyle(
@@ -127,10 +125,8 @@ class ReferralSummaryScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-
-                                  // "Earn $189 each"
                                   const Text(
-                                    'Earn \$189 each',
+                                    'Earn \$189 each', // This is static promo text
                                     style: TextStyle(
                                       color: _textOnTealHeaderBig,
                                       fontSize: 18,
@@ -149,7 +145,7 @@ class ReferralSummaryScreen extends StatelessWidget {
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, // 16 + 4 == 20 from Figma
+                                        horizontal: 20,
                                         vertical: 8,
                                       ),
                                       decoration: BoxDecoration(
@@ -181,7 +177,6 @@ class ReferralSummaryScreen extends StatelessWidget {
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    // glowing yellow circle ~78x78 behind coins
                                     Positioned(
                                       top: 8,
                                       child: Container(
@@ -193,10 +188,8 @@ class ReferralSummaryScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    // TODO: replace with exported coin stack asset from Figma
                                     Image.asset(
                                       "assets/images/referral_coins.png",
-                                      // color: Color(0xFFFFEB3B),
                                     ),
                                   ],
                                 ),
@@ -205,13 +198,42 @@ class ReferralSummaryScreen extends StatelessWidget {
                           ),
                         ),
 
-                        /// CREDIT SUMMARY CARD that visually sits ~halfway down teal
+                        // --- 3. MODIFIED: CREDIT SUMMARY CARD ---
                         Positioned(
                           left: 24,
                           right: 24,
-                          top: 146, // tuned to match the screenshot overlap
-                          child: const _CreditSummaryCard(),
+                          top: 146,
+                          child: Obx(() {
+                            final wallet = controller.walletController.wallet.value;
+
+                            // Important: make this dynamic so `is num` works properly
+                            final dynamic raw = wallet?.usableBalance;
+
+                            String credit;
+
+                            if (raw == null) {
+                              credit = '0';
+                            } else if (raw is num) {
+                              credit = raw.toStringAsFixed(0); // ✅ now valid
+                            } else {
+                              // raw is something else (likely String) -> try parse
+                              final parsed = num.tryParse(raw.toString());
+                              credit = parsed != null
+                                  ? parsed.toStringAsFixed(0)
+                                  : raw.toString();
+                            }
+
+                            final code = controller.referralCode.isNotEmpty
+                                ? controller.referralCode
+                                : '------';
+
+                            return _CreditSummaryCard(
+                              totalCredit: credit,
+                              referralCode: code,
+                            );
+                          }),
                         ),
+
                       ],
                     ),
                   ),
@@ -219,17 +241,32 @@ class ReferralSummaryScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   /// ===== STEPS CALLOUT BOX =====
+                  // --- 5. MODIFIED: Wrap in Obx for loading ---
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
-                    child: const _InviteStepsBox(),
+                    child: Obx(() {
+                      if (controller.isLoadingSteps.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return _InviteStepsBox(steps: controller.steps);
+                    }),
                   ),
 
                   const SizedBox(height: 24),
 
                   /// ===== FAQ SECTION =====
+                  // --- 6. MODIFIED: Wrap in Obx for loading ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: const _FaqSection(),
+                    child: Obx(() {
+                      if (controller.isLoadingFaqs.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return _FaqSection(
+                        faqs: controller.faqs,
+                        controller: controller, // Pass controller for state
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -242,21 +279,18 @@ class ReferralSummaryScreen extends StatelessWidget {
 }
 
 /// ================= CREDIT SUMMARY CARD =================
-/// White rounded-8 card with 1px #E6EAEB border.
-/// Top row:
-///   [ coin icon ] Total credit / $189            [ share circle ]
-/// Subdivider 1px #E6EAEB
-/// "Referral code" / code + "Copy" pill on right.
-///
-/// Also includes the faint watermark circle art in the top-right of the card
-/// per Figma (we'll fake that with an Opacity stack).
 class _CreditSummaryCard extends StatelessWidget {
-  const _CreditSummaryCard();
+  final String totalCredit;
+  final String referralCode;
+
+  const _CreditSummaryCard({
+    required this.totalCredit,
+    required this.referralCode,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Stack so we can layer watermark behind content
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: _cardBg,
@@ -265,13 +299,11 @@ class _CreditSummaryCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // watermark coin / rupee outline in top-right w/ very low opacity
           Positioned(
             top: 16,
             right: 16,
             child: Opacity(
               opacity: 0.04,
-              // TODO: replace with the faint rupee watermark vector from Figma
               child: Transform.rotate(
                 angle: -0.70,
                 child: Container(
@@ -289,23 +321,20 @@ class _CreditSummaryCard extends StatelessWidget {
               ),
             ),
           ),
-
-          // actual card content
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                /// TOP ROW: coin avatar + text + share chip
+                // Top row: icon + total credit + share
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 48x48 yellow coin circle
                     Container(
                       width: 48,
                       height: 48,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFC107), // you'll swap for the real asset background
+                        color: Color(0xFFFFC107),
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -316,29 +345,27 @@ class _CreditSummaryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-
-                    // TEXT BLOCK: let it size naturally
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'Total credit',
                             style: TextStyle(
                               color: _textSecondary,
-                              fontSize: 20, // this needs to go up to match Figma (see below)
+                              fontSize: 20,
                               fontFamily: 'Roboto',
                               fontWeight: FontWeight.w400,
                               height: 1.3,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            '\$189',
-                            style: TextStyle(
+                            '\$$totalCredit',
+                            style: const TextStyle(
                               color: _textPrimary,
-                              fontSize: 28, // ↑ more on this below
+                              fontSize: 28,
                               fontFamily: 'Roboto',
                               fontWeight: FontWeight.w600,
                               height: 1.25,
@@ -347,13 +374,11 @@ class _CreditSummaryCard extends StatelessWidget {
                         ],
                       ),
                     ),
-
-                    // share chip on the right
                     Container(
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _cardBg.withOpacity(0.9), // we'll update this in #2
+                        color: _cardBg.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: _borderGrey,
@@ -370,28 +395,23 @@ class _CreditSummaryCard extends StatelessWidget {
                   ],
                 ),
 
-
                 const SizedBox(height: 12),
-
-                // divider line 1px #E6EAEB
                 Container(
                   width: double.infinity,
                   height: 1,
                   color: _borderGrey,
                 ),
-
                 const SizedBox(height: 12),
 
-                /// REFERRAL CODE ROW
+                // Bottom row: referral code + copy
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left column: "Referral code" + code
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'Referral code',
                             style: TextStyle(
                               color: _textLabelGrey,
@@ -401,10 +421,10 @@ class _CreditSummaryCard extends StatelessWidget {
                               height: 1.3,
                             ),
                           ),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           Text(
-                            'michale10',
-                            style: TextStyle(
+                            referralCode,
+                            style: const TextStyle(
                               color: _tealHeader,
                               fontSize: 16,
                               fontFamily: 'Roboto',
@@ -415,28 +435,41 @@ class _CreditSummaryCard extends StatelessWidget {
                         ],
                       ),
                     ),
-
-                    // "Copy" pill (40 height, 100 radius)
-                    Container(
-                      height: 40,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _copyBtnBg,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Copy',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _copyBtnText,
-                          fontSize: 14,
-                          fontFamily: 'Roboto',
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
+                    GestureDetector(
+                      onTap: () {
+                        if (referralCode.isNotEmpty &&
+                            referralCode != '------') {
+                          Clipboard.setData(
+                            ClipboardData(text: referralCode),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Referral code copied'),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _copyBtnBg,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Copy',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _copyBtnText,
+                            fontSize: 14,
+                            fontFamily: 'Roboto',
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
                         ),
                       ),
                     ),
@@ -451,14 +484,18 @@ class _CreditSummaryCard extends StatelessWidget {
   }
 }
 
-/// ================= INVITE STEPS BOX =================
-/// Rounded-10 box, bg #E6EAEB, 1px #8AA0A1,
-/// 3 rows of icon + text like in the mock.
+
+// --- 7. MODIFIED: _InviteStepsBox now takes dynamic data ---
 class _InviteStepsBox extends StatelessWidget {
-  const _InviteStepsBox();
+  final List<FlowStep> steps;
+  const _InviteStepsBox({required this.steps});
 
   @override
   Widget build(BuildContext context) {
+    if (steps.isEmpty) {
+      return const SizedBox.shrink(); // Don't show if no steps
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: _stepsBg, // E6EAEB
@@ -470,46 +507,27 @@ class _InviteStepsBox extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
-        children: const [
-          _StepRow(
-            // TODO: swap this Icon() for the multicolor "link" asset from Figma
-            icon: Icons.link,
-            text:
-            'Invite your Friend to install the app with the\nlink',
-          ),
-          SizedBox(height: 16),
-          _StepRow(
-            // TODO: swap this Icon() for the yellow box asset from Figma
-            icon: Icons.inventory_2_outlined,
-            text: 'Your friend places a minimum order of ₹300',
-          ),
-          SizedBox(height: 16),
-          _StepRow(
-            // TODO: swap this Icon() for the bag/coins asset from Figma
-            icon: Icons.card_giftcard_outlined,
-            text:
-            'You get ₹150 once the return period is over',
-          ),
+        children: [
+          for (int i = 0; i < steps.length; i++) ...[
+            _StepRow(step: steps[i]),
+            if (i < steps.length - 1) const SizedBox(height: 16),
+          ]
         ],
       ),
     );
   }
 }
 
+// --- 8. MODIFIED: _StepRow now takes a FlowStep ---
 class _StepRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _StepRow({
-    required this.icon,
-    required this.text,
-  });
+  final FlowStep step;
+  const _StepRow({required this.step});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 44x44 white circle with subtle shadow
         Container(
           width: 44,
           height: 44,
@@ -525,19 +543,25 @@ class _StepRow extends StatelessWidget {
             ],
           ),
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            size: 24,
-            color: _tealHeader,
-          ),
+          // --- Use NetworkImage for dynamic avatar ---
+          child: (step.avatar != null && step.avatar!.isNotEmpty)
+              ? Image.network(
+            step.avatar!,
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) =>
+            const Icon(Icons.link, size: 24, color: _tealHeader),
+          )
+              : const Icon(Icons.link, size: 24, color: _tealHeader),
         ),
-        const SizedBox(width: 16), // Figma spacing is ~16 between icon+text
+        const SizedBox(width: 16),
         Expanded(
           child: Text(
-            text,
+            step.title, // <-- Use dynamic title
             style: const TextStyle(
               color: _textPrimary,
-              fontSize: 16, // screenshot text visually reads closer to 16
+              fontSize: 16,
               fontFamily: 'Roboto',
               fontWeight: FontWeight.w500,
               height: 1.3,
@@ -549,15 +573,19 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-/// ================= FAQ SECTION =================
-/// Title, subtitle, and list of FAQ rows.
-/// First row is expanded with answer text and a "minus" bubble on the right.
-/// Remaining rows are collapsed with a "plus" bubble.
+// --- 9. MODIFIED: _FaqSection now takes dynamic data ---
 class _FaqSection extends StatelessWidget {
-  const _FaqSection();
+  final List<Faq> faqs;
+  final ReferralSummaryController controller; // To access expandedFaqIndex
+
+  const _FaqSection({required this.faqs, required this.controller});
 
   @override
   Widget build(BuildContext context) {
+    if (faqs.isEmpty) {
+      return const SizedBox.shrink(); // Don't show if no FAQs
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -584,38 +612,22 @@ class _FaqSection extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        /// Expanded item
-        const _FaqExpandedItem(
-          question: 'Is there a free trial available?',
-          answer:
-          'Yes, you can try us for free for 30 days. If you want, we’ll provide you with a free, personalized 30-minute onboarding call to get you up and running as soon as possible.',
-        ),
-        const _FaqDivider(),
-
-        /// Collapsed rows
-        const _FaqCollapsedItem(
-          question: 'Can I change my plan later?',
-        ),
-        const _FaqDivider(),
-
-        const _FaqCollapsedItem(
-          question: 'What is your cancellation policy?',
-        ),
-        const _FaqDivider(),
-
-        const _FaqCollapsedItem(
-          question: 'Can other info be added to an invoice?',
-        ),
-        const _FaqDivider(),
-
-        const _FaqCollapsedItem(
-          question: 'How does billing work?',
-        ),
-        const _FaqDivider(),
-
-        const _FaqCollapsedItem(
-          question: 'How do I change my account email?',
-        ),
+        // --- Loop over dynamic FAQs ---
+        for (int i = 0; i < faqs.length; i++) ...[
+          Obx(() {
+            final isExpanded = controller.expandedFaqIndex.value == i;
+            return isExpanded
+                ? _FaqExpandedItem(
+              faq: faqs[i],
+              onTap: () => controller.toggleFaq(i),
+            )
+                : _FaqCollapsedItem(
+              faq: faqs[i],
+              onTap: () => controller.toggleFaq(i),
+            );
+          }),
+          if (i < faqs.length - 1) const _FaqDivider(),
+        ],
       ],
     );
   }
@@ -626,10 +638,8 @@ class _FaqDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This mimics the 16px vertical gap plus a 1px #E6EAEB line
     return Container(
-      padding: EdgeInsetsGeometry.only(top: 15),
-      height: 16,
+      padding: const EdgeInsets.only(top: 15),
       alignment: Alignment.topCenter,
       child: Container(
         height: 1,
@@ -639,119 +649,120 @@ class _FaqDivider extends StatelessWidget {
   }
 }
 
+
+// --- 10. MODIFIED: _FaqExpandedItem ---
 class _FaqExpandedItem extends StatelessWidget {
-  final String question;
-  final String answer;
-  const _FaqExpandedItem({
-    required this.question,
-    required this.answer,
-  });
+  final Faq faq;
+  final VoidCallback onTap;
+  const _FaqExpandedItem({required this.faq, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // text block
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                question,
-                style: const TextStyle(
-                  color: _textPrimary,
-                  fontSize: 18, // screenshot headline looks ~18 bold
-                  fontFamily: 'Roboto',
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                answer,
-                style: const TextStyle(
-                  color: _textSecondary,
-                  fontSize: 16,
-                  fontFamily: 'Roboto',
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 16),
-
-        // minus bubble
-        const _FaqIcon(expanded: true),
-      ],
-    );
-  }
-}
-
-class _FaqCollapsedItem extends StatelessWidget {
-  final String question;
-  const _FaqCollapsedItem({required this.question});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Figmas rows breathe a lot vertically before the divider line.
-      padding: const EdgeInsets.only(top: 16),
+    return InkWell(
+      onTap: onTap,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // question text
           Expanded(
-            child: Text(
-              question,
-              style: const TextStyle(
-                color: _textPrimary,
-                fontSize: 18,
-                fontFamily: 'Roboto',
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  faq.question, // <-- Dynamic
+                  style: const TextStyle(
+                    color: _textPrimary,
+                    fontSize: 18,
+                    fontFamily: 'Roboto',
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  faq.answer, // <-- Dynamic
+                  style: const TextStyle(
+                    color: _textSecondary,
+                    fontSize: 16,
+                    fontFamily: 'Roboto',
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 16),
-          const _FaqIcon(expanded: false),
+          _FaqIcon(expanded: true, onTap: onTap),
         ],
       ),
     );
   }
 }
 
-/// Little circular outline badge on the right side of FAQ rows,
-/// teal border 2px, teal "+" or "−" inside.
-///
-/// Figma shows something closer to 24x24 than Material's 20x20 outline icons.
-class _FaqIcon extends StatelessWidget {
-  final bool expanded; // true => minus, false => plus
-  const _FaqIcon({required this.expanded});
+// --- 11. MODIFIED: _FaqCollapsedItem ---
+class _FaqCollapsedItem extends StatelessWidget {
+  final Faq faq;
+  final VoidCallback onTap;
+  const _FaqCollapsedItem({required this.faq, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _tealHeader,
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          expanded ? Icons.remove : Icons.add,
-          size: 16,           // matches the Figma stroke weight visually
-          color: _tealHeader, // same teal as the border
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                faq.question, // <-- Dynamic
+                style: const TextStyle(
+                  color: _textPrimary,
+                  fontSize: 18,
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            _FaqIcon(expanded: false, onTap: onTap),
+          ],
         ),
       ),
     );
   }
 }
 
+// --- 12. MODIFIED: _FaqIcon ---
+class _FaqIcon extends StatelessWidget {
+  final bool expanded; // true => minus, false => plus
+  final VoidCallback onTap;
+  const _FaqIcon({required this.expanded, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _tealHeader,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            expanded ? Icons.remove : Icons.add,
+            size: 16,
+            color: _tealHeader,
+          ),
+        ),
+      ),
+    );
+  }
+}

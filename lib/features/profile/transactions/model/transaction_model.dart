@@ -1,21 +1,22 @@
-// lib/features/profile/transactions/models/transaction_model.dart
+// lib/features/profile/transactions/model/transaction_model.dart
 import 'package:intl/intl.dart';
 
-// Using the 'ProfilePaymentTransaction' schema from the API spec
 class ProfilePaymentTransaction {
   final int id;
-  final OrderTitle order;
+  // --- FIX: Changed from OrderTitle to int ---
+  final int orderId;
   final String? transactionId;
-  final UserPaymentMethodTitle userPaymentMethod;
+  // --- FIX: Changed from UserPaymentMethodTitle to int ---
+  final int userPaymentMethodId;
   final String amount;
   final String status; // 'pending', 'paid', 'failed', 'refunded'
   final String createdAt;
 
   ProfilePaymentTransaction({
     required this.id,
-    required this.order,
+    required this.orderId, // <-- MODIFIED
     this.transactionId,
-    required this.userPaymentMethod,
+    required this.userPaymentMethodId, // <-- MODIFIED
     required this.amount,
     required this.status,
     required this.createdAt,
@@ -24,10 +25,11 @@ class ProfilePaymentTransaction {
   factory ProfilePaymentTransaction.fromJson(Map<String, dynamic> json) {
     return ProfilePaymentTransaction(
       id: json['id'] ?? 0,
-      order: OrderTitle.fromJson(json['order'] ?? {}),
+      // --- FIX: Parse as int ---
+      orderId: json['order'] ?? 0,
       transactionId: json['transaction_id'],
-      userPaymentMethod:
-      UserPaymentMethodTitle.fromJson(json['user_payment_method'] ?? {}),
+      // --- FIX: Parse as int ---
+      userPaymentMethodId: json['user_payment_method'] ?? 0,
       amount: (json['amount'] ?? '0.00').toString(),
       status: json['status'] ?? 'pending',
       createdAt: json['created_at'] ?? '',
@@ -55,11 +57,13 @@ class ProfilePaymentTransaction {
   }
 }
 
+// --- The classes below are no longer used by this model ---
+// --- You can leave them or remove them, but they are not used ---
+// --- for the transaction list. ---
+
 class OrderTitle {
   final int id;
   final String? deliveredAt;
-  // 'order_data' is not provided in this summary, so we omit it.
-
   OrderTitle({required this.id, this.deliveredAt});
 
   factory OrderTitle.fromJson(Map<String, dynamic> json) {
@@ -87,7 +91,6 @@ class UserPaymentMethodTitle {
     );
   }
 
-  // Helper for UI
   String get displayName {
     if (brand != null && brand!.isNotEmpty) {
       return brand!;

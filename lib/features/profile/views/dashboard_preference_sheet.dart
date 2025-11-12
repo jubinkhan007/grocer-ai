@@ -1,27 +1,46 @@
+// lib/features/profile/views/dashboard_preference_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../controllers/dashboard_preference_controller.dart';
 
-class DashboardPreferenceSheet extends StatelessWidget {
+// --- MODIFIED: Converted to GetView<DashboardPreferenceController> ---
+class DashboardPreferenceSheet extends GetView<DashboardPreferenceController> {
   const DashboardPreferenceSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<DashboardPreferenceController>();
+    // --- No need to Get.find(), 'controller' is now available ---
 
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       maxChildSize: 0.9,
       expand: false,
       builder: (_, scrollController) {
+        // --- MODIFIED: Wrapped in Obx to be reactive ---
         return Obx(() {
           if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
+            // --- Use a container that respects the sheet's shape ---
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            );
           }
 
           final prefs = controller.prefs.value;
-          if (prefs == null) return const SizedBox();
+          // --- Handle null state ---
+          if (prefs == null) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: const Center(child: Text("Could not load preferences.")),
+            );
+          }
 
           return Container(
             decoration: const BoxDecoration(
@@ -51,6 +70,7 @@ class DashboardPreferenceSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
+                // --- MODIFIED: Tiles are now dynamic ---
                 _prefTile(
                   'Last order',
                   prefs.showLastOrder,
@@ -80,7 +100,7 @@ class DashboardPreferenceSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: AppColors.bg, // Use AppColors.bg for consistency
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

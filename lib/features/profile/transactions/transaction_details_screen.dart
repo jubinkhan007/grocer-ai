@@ -144,139 +144,184 @@ class _TextStyles {
 /// ROOT SCREEN
 /// ---------------------------------------------------------------------------
 
-class TransactionDetailScreen extends GetView<TransactionController> {
+class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
   const TransactionDetailScreen({super.key, required this.transactionId});
 
   @override
+  State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  final TransactionController controller = Get.find<TransactionController>();
+  bool _fired = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Fire exactly once so we hit: GET /api/v1/profile/transactions/{id}/
+    if (!_fired) {
+      _fired = true;
+      // safe to call after first build context exists
+      controller.loadTransactionDetail(widget.transactionId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return Obx(() {
+      // Prefer the API detail when available, fallback to list item
+      final ProfilePaymentTransaction? tx =
+          controller.detail.value ??
+              controller.transactions.firstWhereOrNull(
+                    (t) => t.id.toString() == widget.transactionId,
+              );
 
-    final tx = controller.transactions
-        .firstWhereOrNull((t) => t.id.toString() == transactionId);
-    // We’re doing a manual chrome (fake status bar + teal app bar) and a
-    // fixed bottom bar, so Scaffold with backgroundColor and a Stack.
-    return Scaffold(
-      backgroundColor: _Palette.bgScreen,
-      body: Stack(
-        children: [
-          // Scrollable body content positioned under header chrome.
-          Positioned.fill(
-            top: 111, // matches ~48 status bar + ~63 header block from design
-            bottom: 68 + 24, // approximate bottom nav + its vertical padding
+      // Keep your exact layout; only guard states
+      if (tx == null && controller.isDetailLoading.value) {
+        return const Scaffold(
+          backgroundColor: _Palette.bgScreen,
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (tx == null) {
+        return const Scaffold(
+          backgroundColor: _Palette.bgScreen,
+          body: Center(child: Text('Transaction not found.')),
+        );
+      }
 
-            // --- THIS IS THE FIX ---
-            // We must check if 'tx' is null *before* passing it to widgets
-            child: (tx == null)
-                ? const Center(child: Text('Transaction not found.'))
-                : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ===== Transaction details =====
-                  Text('Transaction details',
-                      style: _TextStyles.sectionHeading),
-                  const SizedBox(height: 16),
-                  _TransactionDetailsCard(tx: tx), // <-- Now this is safe
-                  const SizedBox(height: 24),
+      // ======== ORIGINAL LAYOUT (unchanged visuals) ========
+      return Scaffold(
+        backgroundColor: _Palette.bgScreen,
+        body: Stack(
+          children: [
+            // Scrollable body content positioned under header chrome.
+            const Positioned.fill(
+              top: 111, // ~48 status bar + ~63 header block
+              bottom: 68 + 24, // bottom nav + padding (as you had)
+              child: _DetailBodyPaddingGate(), // see widget below
+            ),
 
-                  // ===== Order list =====
-                  Text('Order list', style: _TextStyles.sectionHeading),
-                  const SizedBox(height: 16),
+            // HEADER (fake status bar + teal app bar)
+            _HeaderChrome(txnIdText: tx.transactionId ?? 'TXN ID: #...'),
 
-                  // Cards list (static demo data from your mock)
-                  // NOTE: This remains static because your API
-                  // does not return the order items on this endpoint.
-                  Column(
-                    children: const [
-                      _OrderListItemPriceOnly(
-                        title: 'Royal Basmati Rice',
-                        metaLeft: '\$8.75 per kg',
-                        metaRight: '\$39.3 total',
-                        amountText: '\$28.75',
-                        itemsText: '3 Item',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemPriceOnly(
-                        title: 'Sunny Valley Olive Oil',
-                        metaLeft: '\$75.30 per barrel',
-                        metaRight: '\$23.8 total',
-                        amountText: '\$28.75',
-                        itemsText: '3 Item',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemPriceOnly(
-                        title: 'Golden Harvest Quinoa',
-                        metaLeft: '\$4.29 unit price',
-                        metaRight: '\$42.7 total',
-                        amountText: '\$28.75',
-                        itemsText: '3 Item',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemPriceOnly(
-                        title: 'Maple Grove Honey',
-                        metaLeft: '\$12.50 unit price',
-                        metaRight: '\$15.9 total',
-                        amountText: '\$28.75',
-                        itemsText: '3 Item',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Blue Mountain Coffee Beans',
-                        metaLeft: '\$12.99 unit price',
-                        metaRight: '\$19.6 total',
-                        qtyText: '2',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Silver Lake Almond Milk',
-                        metaLeft: '\$3.50 per gallon',
-                        metaRight: '\$27.2 total',
-                        qtyText: '5',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Sunrise Organic Oats',
-                        metaLeft: '\$5.50 unit price',
-                        metaRight: '\$34.5 total',
-                        qtyText: '2',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Wholesome Valley Granola',
-                        metaLeft: '\$8.75 unit price',
-                        metaRight: '\$11.8 total',
-                        qtyText: '2',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Golden Fields Cornmeal',
-                        metaLeft: '\$8.75 unit price',
-                        metaRight: '\$22.1 total',
-                        qtyText: '2',
-                      ),
-                      SizedBox(height: 16),
-                      _OrderListItemWithQty(
-                        title: 'Crystal Spring Mineral Water',
-                        metaLeft: '\$8.75 unit price',
-                        metaRight: '\$16.7 total',
-                        qtyText: '2',
-                      ),
-                    ],
-                  ),
-                ],
+            // The actual scrollable body using your same UI—mounted under header.
+            // We keep it outside the Positioned.fill so it can access `tx`.
+            Positioned.fill(
+              top: 111,
+              bottom: 68 + 24,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Transaction details', style: _TextStyles.sectionHeading),
+                    const SizedBox(height: 16),
+                    _TransactionDetailsCard(tx: tx),
+                    const SizedBox(height: 24),
+
+                    Text('Order list', style: _TextStyles.sectionHeading),
+                    const SizedBox(height: 16),
+
+                    // Your static demo cards (unchanged)
+                    const _OrderListItemPriceOnly(
+                      title: 'Royal Basmati Rice',
+                      metaLeft: '\$8.75 per kg',
+                      metaRight: '\$39.3 total',
+                      amountText: '\$28.75',
+                      itemsText: '3 Item',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemPriceOnly(
+                      title: 'Sunny Valley Olive Oil',
+                      metaLeft: '\$75.30 per barrel',
+                      metaRight: '\$23.8 total',
+                      amountText: '\$28.75',
+                      itemsText: '3 Item',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemPriceOnly(
+                      title: 'Golden Harvest Quinoa',
+                      metaLeft: '\$4.29 unit price',
+                      metaRight: '\$42.7 total',
+                      amountText: '\$28.75',
+                      itemsText: '3 Item',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemPriceOnly(
+                      title: 'Maple Grove Honey',
+                      metaLeft: '\$12.50 unit price',
+                      metaRight: '\$15.9 total',
+                      amountText: '\$28.75',
+                      itemsText: '3 Item',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Blue Mountain Coffee Beans',
+                      metaLeft: '\$12.99 unit price',
+                      metaRight: '\$19.6 total',
+                      qtyText: '2',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Silver Lake Almond Milk',
+                      metaLeft: '\$3.50 per gallon',
+                      metaRight: '\$27.2 total',
+                      qtyText: '5',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Sunrise Organic Oats',
+                      metaLeft: '\$5.50 unit price',
+                      metaRight: '\$34.5 total',
+                      qtyText: '2',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Wholesome Valley Granola',
+                      metaLeft: '\$8.75 unit price',
+                      metaRight: '\$11.8 total',
+                      qtyText: '2',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Golden Fields Cornmeal',
+                      metaLeft: '\$8.75 unit price',
+                      metaRight: '\$22.1 total',
+                      qtyText: '2',
+                    ),
+                    const SizedBox(height: 16),
+                    const _OrderListItemWithQty(
+                      title: 'Crystal Spring Mineral Water',
+                      metaLeft: '\$8.75 unit price',
+                      metaRight: '\$16.7 total',
+                      qtyText: '2',
+                    ),
+                  ],
+                ),
               ),
             ),
-            // --- END FIX ---
-          ),
-
-          // HEADER (fake status bar + teal app bar)
-          _HeaderChrome(txnIdText: tx?.transactionId ?? 'TXN ID: #...'),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 }
+
+/// Dummy filler for original Positioned.fill—keeps layout identical.
+class _DetailBodyPaddingGate extends StatelessWidget {
+  const _DetailBodyPaddingGate();
+
+  @override
+  Widget build(BuildContext context) {
+    // We render nothing here because real content is placed in the second
+    // Positioned.fill (so it can access `tx` from Obx scope) while preserving
+    // your exact geometry.
+    return const SizedBox.shrink();
+  }
+}
+
 
 /// ---------------------------------------------------------------------------
 /// HEADER CHROME: dark status bar strip + teal header bar
@@ -388,7 +433,7 @@ class _TransactionDetailsCard extends StatelessWidget {
         label: 'Card number',
         rightChild: Text(
           // <-- Dynamic data
-          '**** ${tx.userPaymentMethod.brand ?? 'Card'}',
+          'Payment method: #${tx.userPaymentMethodId}',
           style: _TextStyles.detailsValue,
         ),
       ),
@@ -409,7 +454,7 @@ class _TransactionDetailsCard extends StatelessWidget {
       _TxnRow(
         label: 'Recipient',
         rightChild: Text(
-          tx.userPaymentMethod.paymentMethod.name, // <-- Dynamic data
+          'Order #${tx.orderId}', // <-- Dynamic data
           style: _TextStyles.detailsValue,
         ),
       ),

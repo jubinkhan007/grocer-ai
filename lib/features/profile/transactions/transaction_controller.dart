@@ -13,6 +13,9 @@ class TransactionController extends GetxController {
   final RxMap<String, List<ProfilePaymentTransaction>> groupedTransactions =
       <String, List<ProfilePaymentTransaction>>{}.obs;
 
+  final Rxn<ProfilePaymentTransaction> detail = Rxn<ProfilePaymentTransaction>();
+  final isDetailLoading = false.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -31,6 +34,17 @@ class TransactionController extends GetxController {
       Get.snackbar('Error', 'Could not load transactions: $e');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadTransactionDetail(String id) async {
+    try {
+      isDetailLoading.value = true;
+      detail.value = await _service.fetchTransactionDetails(id);
+    } catch (e) {
+      Get.snackbar('Error', 'Could not load transaction: $e');
+    } finally {
+      isDetailLoading.value = false;
     }
   }
 

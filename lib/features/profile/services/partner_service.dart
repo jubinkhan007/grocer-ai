@@ -1,69 +1,63 @@
+// lib/features/profile/services/partner_service.dart
+
 import 'package:dio/dio.dart';
 import 'package:grocer_ai/core/theme/network/api_endpoints.dart';
 import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import '../models/partner_model.dart';
+import '../models/partner_search_user.dart';
 
 class PartnerService {
-  final DioClient _dioClient;
+  final DioClient _dio;
+  PartnerService(this._dio);
 
-  PartnerService(this._dioClient);
-
-  /// GET partners list
+  /// GET /api/v1/profile/partners/
   Future<List<Partner>> fetchPartners() async {
-    try {
-      final response = await _dioClient.getJson(ApiPath.profilePartners);
-      final data = response.data;
-      if (data is List) {
-        return data.map((e) => Partner.fromJson(e)).toList();
-      } else if (data is Map && data['results'] != null) {
-        return (data['results'] as List)
-            .map((e) => Partner.fromJson(e))
-            .toList();
-      }
-      return [];
-    } on DioException catch (e) {
-      print('GET /partners failed: ${e.message}');
-      rethrow;
+    final res = await _dio.getJson(ApiPath.profilePartners);
+    final data = res.data;
+
+    if (data is List) {
+      return data.map((e) => Partner.fromJson(e)).toList();
+    } else if (data is Map && data['results'] is List) {
+      return (data['results'] as List)
+          .map((e) => Partner.fromJson(e))
+          .toList();
     }
+    return [];
   }
 
-  /// POST add partner
-  Future<Partner?> addPartner(String name) async {
+  /// GET /api/v1/profile/users/?search=<query>
+  Future<List<PartnerSearchUser>> searchUsers(String query) async {
+    if (query.trim().isEmpty) return [];
+    final res = await _dio.getJson(
+      '${ApiPath.profileUsers}?search=${Uri.encodeQueryComponent(query.trim())}',
+    );
+    final data = res.data;
+
+    if (data is Map && data['results'] is List) {
+      return (data['results'] as List)
+          .map((e) => PartnerSearchUser.fromJson(e))
+          .toList();
+    }
+    return [];
+  }
+
+  /// POST /api/v1/profile/partners/  { "partner_id": <id> }
+  Future<Partner?> addPartner({required int partnerId}) async {
     try {
-      final response = await _dioClient.postJson(
+      final res = await _dio.postJson(
         ApiPath.profilePartners,
-        {'name': name},
+        {'partner_id': partnerId},
       );
-      return Partner.fromJson(response.data);
+      return Partner.fromJson(res.data);
     } on DioException catch (e) {
-      print('POST /partners failed: ${e.message}');
+      // Surface backend message to caller
+      print('addPartner failed: ${e.response?.data ?? e.message}');
       rethrow;
     }
   }
 
-  /// PATCH/PUT update partner
-  Future<Partner?> updatePartner(int id, Map<String, dynamic> data,
-      {bool partial = true}) async {
-    try {
-      final method = partial
-          ? _dioClient.patchJson
-          : _dioClient.putJson; // same as in your ProfileService
-      final response =
-      await method('${ApiPath.profilePartners}$id/', data);
-      return Partner.fromJson(response.data);
-    } on DioException catch (e) {
-      print('UPDATE /partners/$id failed: ${e.message}');
-      rethrow;
-    }
-  }
-
-  /// DELETE partner
-  Future<void> deletePartner(int id) async {
-    try {
-      await _dioClient.deleteJson('${ApiPath.profilePartners}$id/');
-    } on DioException catch (e) {
-      print('DELETE /partners/$id failed: ${e.message}');
-      rethrow;
-    }
+  /// DELETE /api/v1/profile/partners/<id>/
+  Future<void> removePartner(int relationId) async {
+    await _dio.deleteJson('${ApiPath.profilePartners}$relationId/');
   }
 }
