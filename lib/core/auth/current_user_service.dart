@@ -1,3 +1,5 @@
+// lib/core/auth/current_user_service.dart
+
 import 'package:get_storage/get_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
@@ -6,8 +8,13 @@ class CurrentUserService {
 
   CurrentUserService(this._box);
 
+   String? get _effectiveAccessToken {
+       // Prefer the key actually used by AuthRepository, but keep fallback
+       return _box.read<String>('auth_token') ?? _box.read<String>('access_token');
+     }
+
   Map<String, dynamic>? get _claims {
-    final token = _box.read<String>('access_token');
+    final token = _effectiveAccessToken;
     if (token == null || token.isEmpty) return null;
 
     try {
@@ -26,5 +33,7 @@ class CurrentUserService {
 
   String? get name => _claims?['name'] as String?;
   String? get email => _claims?['email'] as String?;
-  String? get referralCode => _claims?['referral_code'] as String?;
+   // Support either `referral_code` or a future/alt key just in case
+   String? get referralCode =>
+           (_claims?['referral_code'] ?? _claims?['refCode'] ?? _claims?['ref']) as String?;
 }

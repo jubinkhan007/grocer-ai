@@ -26,12 +26,14 @@ class TransactionController extends GetxController {
     try {
       isLoading.value = true;
       final list = await _service.fetchTransactions();
-      // Sort by date descending before grouping
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       transactions.assignAll(list);
       _groupTransactions();
     } catch (e) {
-      Get.snackbar('Error', 'Could not load transactions: $e');
+      // Friendlier message; avoid dumping type exceptions to the user
+      Get.snackbar('Error', 'Unable to load transactions. Please try again.');
+      // Optional: log debug details
+      // debugPrint('[transactions] $e');
     } finally {
       isLoading.value = false;
     }
@@ -42,11 +44,13 @@ class TransactionController extends GetxController {
       isDetailLoading.value = true;
       detail.value = await _service.fetchTransactionDetails(id);
     } catch (e) {
-      Get.snackbar('Error', 'Could not load transaction: $e');
+      Get.snackbar('Error', 'Unable to load this transaction. Please try again.');
+      // debugPrint('[transaction detail] $e');
     } finally {
       isDetailLoading.value = false;
     }
   }
+
 
   void _groupTransactions() {
     final groups = <String, List<ProfilePaymentTransaction>>{};

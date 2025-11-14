@@ -8,6 +8,7 @@ import 'package:grocer_ai/features/orders/models/order_status_model.dart';
 import 'package:intl/intl.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../offer/views/offer_screen.dart';
+import '../../shared/teal_app_bar.dart';
 import '../bindings/new_order_binding.dart';
 import 'new_order_screen.dart';
 import 'orders_screen.dart';
@@ -61,6 +62,10 @@ class PastOrderDetailsScreen extends GetView<PastOrderDetailsController> {
     return Scaffold(
       backgroundColor: AppColors.bg, // #F4F6F6
       // --- MODIFIED: Bottom button is now inside the Obx ---
+      appBar: const TealTitleAppBar(
+        title: 'Order details',
+        showBack: true, // uses Get.back() by default
+      ),
       bottomNavigationBar: Obx(() {
         if (controller.isLoading.value || controller.order.value == null) {
           return const SizedBox.shrink();
@@ -90,25 +95,6 @@ class PastOrderDetailsScreen extends GetView<PastOrderDetailsController> {
       }),
       body: CustomScrollView(
         slivers: [
-          /// Figma status bar strip (#002C2E)
-          SliverToBoxAdapter(
-            child: AnnotatedRegion<SystemUiOverlayStyle>(
-              value: SystemUiOverlayStyle.light, // white status icons
-              child: Container(
-                height: statusH,
-                color: const Color(0xFF33595B), // same teal as app bar
-              ),
-            ),
-          ),
-          /// Top bar (teal) exactly like figma
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _FigmaTealHeader(
-              padTop: 0,
-              toolbarHeight: 74,
-            ),
-          ),
-
           /// --- MODIFIED: WRAP CONTENT IN Obx ---
           Obx(() {
             if (controller.isLoading.value) {

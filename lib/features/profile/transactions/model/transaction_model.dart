@@ -3,55 +3,58 @@ import 'package:intl/intl.dart';
 
 class ProfilePaymentTransaction {
   final int id;
-  // --- FIX: Changed from OrderTitle to int ---
   final int orderId;
-  final String? transactionId;
-  // --- FIX: Changed from UserPaymentMethodTitle to int ---
   final int userPaymentMethodId;
+  final String? transactionId;
   final String amount;
-  final String status; // 'pending', 'paid', 'failed', 'refunded'
+  final String status;
   final String createdAt;
 
   ProfilePaymentTransaction({
     required this.id,
-    required this.orderId, // <-- MODIFIED
+    required this.orderId,
+    required this.userPaymentMethodId,
     this.transactionId,
-    required this.userPaymentMethodId, // <-- MODIFIED
     required this.amount,
     required this.status,
     required this.createdAt,
   });
 
+  // NEW: tolerant int extractor (handles int / string / {id: ...} / null)
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v) ?? 0;
+    if (v is Map<String, dynamic>) return _asInt(v['id']);
+    return 0;
+  }
+
   factory ProfilePaymentTransaction.fromJson(Map<String, dynamic> json) {
     return ProfilePaymentTransaction(
-      id: json['id'] ?? 0,
-      // --- FIX: Parse as int ---
-      orderId: json['order'] ?? 0,
-      transactionId: json['transaction_id'],
-      // --- FIX: Parse as int ---
-      userPaymentMethodId: json['user_payment_method'] ?? 0,
+      id: _asInt(json['id']),
+      orderId: _asInt(json['order']),                        // ✅ handles map or id
+      userPaymentMethodId: _asInt(json['user_payment_method']), // ✅ handles map or id
+      transactionId: json['transaction_id']?.toString(),
       amount: (json['amount'] ?? '0.00').toString(),
-      status: json['status'] ?? 'pending',
-      createdAt: json['created_at'] ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 
-  // Helper for grouping
   String get formattedDate {
     try {
       final date = DateTime.parse(createdAt);
       return DateFormat('dd MMM yyyy').format(date);
-    } catch (e) {
+    } catch (_) {
       return 'Unknown Date';
     }
   }
 
-  // Helper for detail screen
   String get formattedDateTime {
     try {
       final date = DateTime.parse(createdAt);
       return DateFormat('dd MMM yyyy • h:mma').format(date);
-    } catch (e) {
+    } catch (_) {
       return createdAt;
     }
   }

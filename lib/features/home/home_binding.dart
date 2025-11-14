@@ -1,6 +1,8 @@
 // lib/features/home/home_binding.dart
 
 import 'package:get/get.dart';
+import 'package:grocer_ai/features/home/services/dashboard_service.dart';
+import 'package:grocer_ai/features/home/services/preference_service.dart';
 import 'package:grocer_ai/features/onboarding/location/location_repository.dart';
 import 'package:grocer_ai/features/orders/controllers/order_controller.dart';
 import 'package:grocer_ai/features/profile/controllers/profile_controller.dart';
@@ -17,6 +19,8 @@ class HomeBinding extends Bindings {
       Get.find<WalletController>(),
       Get.find<LocationRepository>(),
       Get.find<OrderController>(),
+      Get.find<DashboardService>(),
+      Get.find<PreferenceService>(),
     ));
   }
 }

@@ -47,26 +47,30 @@ class Order {
   final String orderId;
   final String price;
   final String? discount;
-  final String? redeemFromWallet; // <-- ADDED
+  final String? redeemFromWallet;
+  final int totalItems; // <-- ADDED
   final String status;
   final String deliveryMethod;
+  final String? deliveryTime; // <-- ADDED
   final String deliveryAddress;
   final DateTime createdAt;
   final Provider? provider;
-  final List<OrderDataItem> items; // <-- ADDED
+  final List<OrderDataItem> items;
 
   Order({
     required this.id,
     required this.orderId,
     required this.price,
     this.discount,
-    this.redeemFromWallet, // <-- ADDED
+    this.redeemFromWallet,
+    required this.totalItems, // <-- ADDED
     required this.status,
     required this.deliveryMethod,
+    this.deliveryTime, // <-- ADDED
     required this.deliveryAddress,
     required this.createdAt,
     this.provider,
-    required this.items, // <-- ADDED
+    required this.items,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -96,13 +100,15 @@ class Order {
       orderId: json['order_id'] ?? '',
       price: json['price'] ?? '0.00',
       discount: json['discount'],
-      redeemFromWallet: json['redeem_from_wallet'], // <-- ADDED
+      redeemFromWallet: json['redeem_from_wallet'],
+      totalItems: json['total_items'] ?? items.length, // <-- ADDED (fallback to items.length)
       status: json['status']?.toString() ?? 'pending',
       deliveryMethod: json['delivery_method'] ?? '',
+      deliveryTime: json['delivery_time'], // <-- ADDED
       deliveryAddress: json['delivery_address'] ?? '',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       provider: provider,
-      items: items, // <-- ADDED
+      items: items,
     );
   }
 }

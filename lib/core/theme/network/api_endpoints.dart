@@ -14,6 +14,13 @@ class ApiPath {
   // Login
   static const String login = '$auth/login/'; // POST
 
+  // HomeScreen
+  // --- ADDED Banners (was missing from this file) ---
+  static const String banners = '$v1/banners/';
+  // --- ADDED Dashboard Stats ---
+  static const String lastMonthStats = '$v1/orders/last-month-stats/';
+  static const String analysisStats = '$v1/orders/analysis-stats/';
+  static const preferenceCompleteness = '/api/v1/preference-completeness/';
   // Forgot Password (from Swagger screenshots)
   static const String pwReset = '$auth/password-reset/'; // POST {email}
   static const String pwOtpVerify =

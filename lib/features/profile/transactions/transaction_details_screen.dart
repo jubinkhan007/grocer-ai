@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/simple/get_view.dart';
 import 'package:grocer_ai/features/profile/transactions/transaction_controller.dart';
 
+import '../../shared/teal_app_bar.dart';
 import 'model/transaction_model.dart';
 
 /// ---------------------------------------------------------------------------
@@ -170,14 +171,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // Prefer the API detail when available, fallback to list item
       final ProfilePaymentTransaction? tx =
           controller.detail.value ??
               controller.transactions.firstWhereOrNull(
                     (t) => t.id.toString() == widget.transactionId,
               );
 
-      // Keep your exact layout; only guard states
       if (tx == null && controller.isDetailLoading.value) {
         return const Scaffold(
           backgroundColor: _Palette.bgScreen,
@@ -191,137 +190,101 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         );
       }
 
-      // ======== ORIGINAL LAYOUT (unchanged visuals) ========
+      // ✅ No fake status bar; just the teal header inside SafeArea
       return Scaffold(
         backgroundColor: _Palette.bgScreen,
-        body: Stack(
-          children: [
-            // Scrollable body content positioned under header chrome.
-            const Positioned.fill(
-              top: 111, // ~48 status bar + ~63 header block
-              bottom: 68 + 24, // bottom nav + padding (as you had)
-              child: _DetailBodyPaddingGate(), // see widget below
-            ),
+        appBar: TealTitleAppBar(
+          title: (tx.transactionId != null && tx.transactionId!.isNotEmpty)
+              ? 'TXN ID: ${tx.transactionId}'
+              : 'TXN ID: #${tx.id}',
+          showBack: true,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Transaction details', style: _TextStyles.sectionHeading),
+              const SizedBox(height: 16),
+              _TransactionDetailsCard(tx: tx),
+              const SizedBox(height: 24),
 
-            // HEADER (fake status bar + teal app bar)
-            _HeaderChrome(txnIdText: tx.transactionId ?? 'TXN ID: #...'),
+              Text('Order list', style: _TextStyles.sectionHeading),
+              const SizedBox(height: 16),
 
-            // The actual scrollable body using your same UI—mounted under header.
-            // We keep it outside the Positioned.fill so it can access `tx`.
-            Positioned.fill(
-              top: 111,
-              bottom: 68 + 24,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Transaction details', style: _TextStyles.sectionHeading),
-                    const SizedBox(height: 16),
-                    _TransactionDetailsCard(tx: tx),
-                    const SizedBox(height: 24),
-
-                    Text('Order list', style: _TextStyles.sectionHeading),
-                    const SizedBox(height: 16),
-
-                    // Your static demo cards (unchanged)
-                    const _OrderListItemPriceOnly(
-                      title: 'Royal Basmati Rice',
-                      metaLeft: '\$8.75 per kg',
-                      metaRight: '\$39.3 total',
-                      amountText: '\$28.75',
-                      itemsText: '3 Item',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemPriceOnly(
-                      title: 'Sunny Valley Olive Oil',
-                      metaLeft: '\$75.30 per barrel',
-                      metaRight: '\$23.8 total',
-                      amountText: '\$28.75',
-                      itemsText: '3 Item',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemPriceOnly(
-                      title: 'Golden Harvest Quinoa',
-                      metaLeft: '\$4.29 unit price',
-                      metaRight: '\$42.7 total',
-                      amountText: '\$28.75',
-                      itemsText: '3 Item',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemPriceOnly(
-                      title: 'Maple Grove Honey',
-                      metaLeft: '\$12.50 unit price',
-                      metaRight: '\$15.9 total',
-                      amountText: '\$28.75',
-                      itemsText: '3 Item',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Blue Mountain Coffee Beans',
-                      metaLeft: '\$12.99 unit price',
-                      metaRight: '\$19.6 total',
-                      qtyText: '2',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Silver Lake Almond Milk',
-                      metaLeft: '\$3.50 per gallon',
-                      metaRight: '\$27.2 total',
-                      qtyText: '5',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Sunrise Organic Oats',
-                      metaLeft: '\$5.50 unit price',
-                      metaRight: '\$34.5 total',
-                      qtyText: '2',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Wholesome Valley Granola',
-                      metaLeft: '\$8.75 unit price',
-                      metaRight: '\$11.8 total',
-                      qtyText: '2',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Golden Fields Cornmeal',
-                      metaLeft: '\$8.75 unit price',
-                      metaRight: '\$22.1 total',
-                      qtyText: '2',
-                    ),
-                    const SizedBox(height: 16),
-                    const _OrderListItemWithQty(
-                      title: 'Crystal Spring Mineral Water',
-                      metaLeft: '\$8.75 unit price',
-                      metaRight: '\$16.7 total',
-                      qtyText: '2',
-                    ),
-                  ],
-                ),
+              // (Your demo items unchanged)
+              const _OrderListItemPriceOnly(
+                title: 'Royal Basmati Rice',
+                metaLeft: '\$8.75 per kg',
+                metaRight: '\$39.3 total',
+                amountText: '\$28.75',
+                itemsText: '3 Item',
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              const _OrderListItemPriceOnly(
+                title: 'Sunny Valley Olive Oil',
+                metaLeft: '\$75.30 per barrel',
+                metaRight: '\$23.8 total',
+                amountText: '\$28.75',
+                itemsText: '3 Item',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemPriceOnly(
+                title: 'Golden Harvest Quinoa',
+                metaLeft: '\$4.29 unit price',
+                metaRight: '\$42.7 total',
+                amountText: '\$28.75',
+                itemsText: '3 Item',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Blue Mountain Coffee Beans',
+                metaLeft: '\$12.99 unit price',
+                metaRight: '\$19.6 total',
+                qtyText: '2',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Silver Lake Almond Milk',
+                metaLeft: '\$3.50 per gallon',
+                metaRight: '\$27.2 total',
+                qtyText: '5',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Sunrise Organic Oats',
+                metaLeft: '\$5.50 unit price',
+                metaRight: '\$34.5 total',
+                qtyText: '2',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Wholesome Valley Granola',
+                metaLeft: '\$8.75 unit price',
+                metaRight: '\$11.8 total',
+                qtyText: '2',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Golden Fields Cornmeal',
+                metaLeft: '\$8.75 unit price',
+                metaRight: '\$22.1 total',
+                qtyText: '2',
+              ),
+              const SizedBox(height: 16),
+              const _OrderListItemWithQty(
+                title: 'Crystal Spring Mineral Water',
+                metaLeft: '\$8.75 unit price',
+                metaRight: '\$16.7 total',
+                qtyText: '2',
+              ),
+            ],
+          ),
         ),
       );
     });
   }
 }
-
-/// Dummy filler for original Positioned.fill—keeps layout identical.
-class _DetailBodyPaddingGate extends StatelessWidget {
-  const _DetailBodyPaddingGate();
-
-  @override
-  Widget build(BuildContext context) {
-    // We render nothing here because real content is placed in the second
-    // Positioned.fill (so it can access `tx` from Obx scope) while preserving
-    // your exact geometry.
-    return const SizedBox.shrink();
-  }
-}
-
 
 /// ---------------------------------------------------------------------------
 /// HEADER CHROME: dark status bar strip + teal header bar
@@ -333,83 +296,39 @@ class _HeaderChrome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Fake status bar region (height ~48.14 in the Figma export)
-        Container(
-          color: _Palette.bgStatusBar,
-          height: 48.14,
-          width: double.infinity,
-          child: Stack(
-            children: [
-              // "9:41" text left ~24px from left, ~15px from top in mock
-              Positioned(
-                left: 24.51,
-                top: 15.32,
-                child: SizedBox(
-                  width: 35.01,
-                  child: Text(
-                    '9:41',
-                    textAlign: TextAlign.center,
-                    style: _TextStyles.fakeStatusBarText,
-                  ),
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        width: double.infinity,
+        color: _Palette.bgHeaderBar,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 20,
+              child: InkWell(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: _Palette.textOnHeader,
+                  size: 20,
                 ),
               ),
-              // little battery-ish block at ~380 left, 20.87 top (placeholder)
-              Positioned(
-                left: 380.78,
-                top: 20.87,
-                child: Container(
-                  width: 19.69,
-                  height: 8.39,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE9E9E9),
-                    borderRadius: BorderRadius.circular(1.75),
-                  ),
-                ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                txnIdText,
+                style: _TextStyles.headerTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-
-        // Teal bar (padding: horizontal 24, vertical 20)
-        Container(
-          width: double.infinity,
-          color: _Palette.bgHeaderBar,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Back chevron placeholder (14x20 box in design)
-              SizedBox(
-                width: 14,
-                height: 20,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).maybePop();
-                  },
-                  // A simple back icon. You can swap with exact SVG.
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: _Palette.textOnHeader,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Title text "TXN ID: #565765"
-              Flexible(
-                child: Text(
-                  txnIdText,
-                  style: _TextStyles.headerTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

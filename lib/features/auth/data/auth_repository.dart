@@ -40,7 +40,8 @@ class AuthRepository {
         );
       }
       final tokens = AuthTokens.fromJson(data);
-      _box.write('auth_token', tokens.accessToken);
+         _box.write('auth_token', tokens.accessToken);
+         _box.write('access_token', tokens.accessToken);
       _box.write('refresh_token', tokens.refreshToken);
       return tokens;
     } on DioException catch (e) {
@@ -138,7 +139,8 @@ class AuthRepository {
 
       // Swagger shows access_token & refresh_token in the response.
       final tokens = AuthTokens.fromJson(data);
-      _box.write('auth_token', tokens.accessToken);
+         _box.write('auth_token', tokens.accessToken);
+         _box.write('access_token', tokens.accessToken);
       _box.write('refresh_token', tokens.refreshToken);
       return tokens;
     } on DioException catch (e) {

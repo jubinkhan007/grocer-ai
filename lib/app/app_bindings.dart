@@ -7,18 +7,22 @@ import '../core/auth/current_user_service.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/home/home_controller.dart';
+import '../features/home/services/dashboard_service.dart';
+import '../features/home/services/preference_service.dart';
 import '../features/notification/controllers/notification_controller.dart';
 import '../features/notification/services/notification_service.dart';
 import '../features/offer/controllers/offer_controller.dart';
 import '../features/offer/services/offer_service.dart';
 import '../features/onboarding/location/location_repository.dart';
 import '../features/orders/controllers/order_controller.dart';
+import '../features/orders/controllers/past_order_details_controller.dart';
 import '../features/orders/services/order_service.dart';
 import '../features/preferences/preferences_controller.dart';
 import '../features/preferences/preferences_repository.dart'; // <-- 1. IMPORT
 import '../features/profile/controllers/dashboard_preference_controller.dart';
 import '../features/profile/controllers/partner_controller.dart';
 import '../features/profile/controllers/referral_controller.dart';
+import '../features/profile/controllers/referral_summary_controller.dart';
 import '../features/profile/security/controllers/security_controller.dart';
 import '../features/profile/security/services/security_service.dart';
 import '../features/profile/services/dashboard_preference_service.dart';
@@ -26,6 +30,7 @@ import '../features/profile/services/partner_service.dart';
 import '../features/profile/services/profile_service.dart';
 import '../features/profile/controllers/profile_controller.dart';
 import '../features/profile/services/referral_service.dart';
+import '../features/profile/services/referral_summary_service.dart';
 import '../features/profile/wallet/wallet_controller.dart';
 import '../features/profile/wallet/wallet_service.dart';
 import '../shell/main_shell_controller.dart';
@@ -136,6 +141,7 @@ class AppBindings extends Bindings {
     );
 
 
+
     Get.lazyPut<OfferService>(
           () => OfferService(Get.find<DioClient>()),
       fenix: true,
@@ -150,14 +156,35 @@ class AppBindings extends Bindings {
       fenix: true,
     );
 
+    // --- 2. ADD DashboardService ---
+    Get.lazyPut<DashboardService>(() => DashboardService(Get.find<DioClient>()), fenix: true);
+    Get.lazyPut<PreferenceService>(() => PreferenceService(Get.find<DioClient>()), fenix: true);
+
+// lib/app/app_bindings.dart
     Get.lazyPut<HomeController>(
           () => HomeController(
         Get.find<ProfileController>(),
         Get.find<WalletController>(),
         Get.find<LocationRepository>(),
         Get.find<OrderController>(),
+            Get.find<DashboardService>(),
+            Get.find<PreferenceService>(),
       ),
       fenix: true,
     );
+    Get.lazyPut<ReferralSummaryService>(
+          () => ReferralSummaryService(Get.find<DioClient>()),
+      fenix: true,
+    );
+
+    Get.lazyPut<ReferralSummaryController>(
+          () => ReferralSummaryController(
+        Get.find<ReferralSummaryService>(),
+        Get.find<WalletController>(),
+        Get.find<CurrentUserService>(),
+      ),
+      fenix: true,
+    );
+
   }
 }

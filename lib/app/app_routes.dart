@@ -36,7 +36,10 @@ import 'package:grocer_ai/features/auth/signup_view.dart';
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
 import '../features/orders/bindings/order_binding.dart';
+import '../features/orders/controllers/past_order_details_controller.dart';
+import '../features/orders/services/order_service.dart';
 import '../features/orders/views/orders_screen.dart';
+import '../features/orders/views/past_order_details_screen.dart';
 import '../features/profile/security/views/security_screen.dart';
 import '../features/profile/settings/settings_screen.dart';
 import '../features/profile/transactions/transaction_binding.dart';
@@ -216,7 +219,14 @@ class AppPages {
       page: () => const TransactionsScreen(), // <-- Make sure it's const
       binding: TransactionBinding(), // <-- 2. ADD BINDING
     ),
-
+    GetPage(
+      name: '/orders/past/:id',
+      page: () => const PastOrderDetailsScreen(),
+      binding: BindingsBuilder(() {
+        final id = int.parse(Get.parameters['id']!);
+        Get.put(PastOrderDetailsController(Get.find<OrderService>(), orderId: id));
+      }),
+    ),
 
   ];
 }
