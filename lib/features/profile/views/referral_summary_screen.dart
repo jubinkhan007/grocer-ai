@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:grocer_ai/features/profile/controllers/referral_summary_controller.dart';
 import 'package:grocer_ai/features/profile/models/faq_model.dart';
 import 'package:grocer_ai/features/profile/models/flow_step_model.dart';
+import 'package:share_plus/share_plus.dart';
 // --- END IMPORT ---
 
 import '../../../shell/main_shell_controller.dart';
@@ -230,6 +231,19 @@ class ReferralSummaryScreen extends GetView<ReferralSummaryController> {
                             return _CreditSummaryCard(
                               totalCredit: credit,
                               referralCode: code,
+                              onCopy: () {
+                                if (code.isNotEmpty && code != '------') {
+                                  Clipboard.setData(ClipboardData(text: code));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Referral code copied')),
+                                  );
+                                }
+                              },
+                              onShare: () async {
+                                if (code.isNotEmpty && code != '------') {
+                                  await Share.share('Use my GrocerAI referral code: $code');
+                                }
+                              },
                             );
                           }),
                         ),
@@ -248,7 +262,11 @@ class ReferralSummaryScreen extends GetView<ReferralSummaryController> {
                       if (controller.isLoadingSteps.value) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      return _InviteStepsBox(steps: controller.steps);
+                      return _InviteStepsBox(
+                        steps: controller.steps,
+                        iconSize: 64,        // try 64, 72, etc.
+                        avatarPadding: 10,   // tweak if images feel cramped
+                      );
                     }),
                   ),
 
@@ -282,10 +300,14 @@ class ReferralSummaryScreen extends GetView<ReferralSummaryController> {
 class _CreditSummaryCard extends StatelessWidget {
   final String totalCredit;
   final String referralCode;
+  final VoidCallback? onCopy;
+  final VoidCallback? onShare;
 
   const _CreditSummaryCard({
     required this.totalCredit,
     required this.referralCode,
+    this.onCopy,
+    this.onShare,
   });
 
   @override
@@ -307,15 +329,11 @@ class _CreditSummaryCard extends StatelessWidget {
               child: Transform.rotate(
                 angle: -0.70,
                 child: Container(
-                  width: 72,
-                  height: 72,
+                  width: 72, height: 72,
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(36),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
               ),
@@ -326,84 +344,54 @@ class _CreditSummaryCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top row: icon + total credit + share
+                // top row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 48, height: 48,
                       decoration: const BoxDecoration(
                         color: Color(0xFFFFC107),
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.attach_money,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      child: const Icon(Icons.attach_money, color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Total credit',
-                            style: TextStyle(
-                              color: _textSecondary,
-                              fontSize: 20,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w400,
-                              height: 1.3,
-                            ),
-                          ),
+                          const Text('Total credit',
+                              style: TextStyle(color: _textSecondary, fontSize: 20, fontFamily: 'Roboto', fontWeight: FontWeight.w400, height: 1.3)),
                           const SizedBox(height: 4),
-                          Text(
-                            '\$$totalCredit',
-                            style: const TextStyle(
-                              color: _textPrimary,
-                              fontSize: 28,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                          ),
+                          Text('\$$totalCredit',
+                              style: const TextStyle(color: _textPrimary, fontSize: 28, fontFamily: 'Roboto', fontWeight: FontWeight.w600, height: 1.25)),
                         ],
                       ),
                     ),
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: _cardBg.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: _borderGrey,
-                          width: 1,
+                    InkWell(
+                      onTap: onShare,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        width: 48, height: 48,
+                        decoration: BoxDecoration(
+                          color: _cardBg.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: _borderGrey, width: 1),
                         ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.ios_share,
-                        size: 24,
-                        color: _tealHeader,
+                        alignment: Alignment.center,
+                        child: Icon(Icons.ios_share, size: 24, color: _tealHeader),
                       ),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  height: 1,
-                  color: _borderGrey,
-                ),
+                Container(width: double.infinity, height: 1, color: _borderGrey),
                 const SizedBox(height: 12),
 
-                // Bottom row: referral code + copy
+                // bottom row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -411,66 +399,23 @@ class _CreditSummaryCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Referral code',
-                            style: TextStyle(
-                              color: _textLabelGrey,
-                              fontSize: 16,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w500,
-                              height: 1.3,
-                            ),
-                          ),
+                          const Text('Referral code',
+                              style: TextStyle(color: _textLabelGrey, fontSize: 16, fontFamily: 'Roboto', fontWeight: FontWeight.w500, height: 1.3)),
                           const SizedBox(height: 12),
-                          Text(
-                            referralCode,
-                            style: const TextStyle(
-                              color: _tealHeader,
-                              fontSize: 16,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                            ),
-                          ),
+                          Text(referralCode,
+                              style: const TextStyle(color: _tealHeader, fontSize: 16, fontFamily: 'Roboto', fontWeight: FontWeight.w600, height: 1.3)),
                         ],
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        if (referralCode.isNotEmpty &&
-                            referralCode != '------') {
-                          Clipboard.setData(
-                            ClipboardData(text: referralCode),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Referral code copied'),
-                            ),
-                          );
-                        }
-                      },
+                      onTap: onCopy,
                       child: Container(
                         height: 40,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _copyBtnBg,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(color: _copyBtnBg, borderRadius: BorderRadius.circular(100)),
                         alignment: Alignment.center,
-                        child: const Text(
-                          'Copy',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _copyBtnText,
-                            fontSize: 14,
-                            fontFamily: 'Roboto',
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                        ),
+                        child: const Text('Copy',
+                            style: TextStyle(color: _copyBtnText, fontSize: 14, fontFamily: 'Roboto', fontWeight: FontWeight.w500, height: 1.3)),
                       ),
                     ),
                   ],
@@ -488,28 +433,34 @@ class _CreditSummaryCard extends StatelessWidget {
 // --- 7. MODIFIED: _InviteStepsBox now takes dynamic data ---
 class _InviteStepsBox extends StatelessWidget {
   final List<FlowStep> steps;
-  const _InviteStepsBox({required this.steps});
+  final double iconSize;         // <— NEW (container diameter)
+  final double avatarPadding;    // <— NEW (inner padding for image)
+
+  const _InviteStepsBox({
+    required this.steps,
+    this.iconSize = 56,          // tweak this to make it bigger/smaller
+    this.avatarPadding = 8,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (steps.isEmpty) {
-      return const SizedBox.shrink(); // Don't show if no steps
-    }
+    if (steps.isEmpty) return const SizedBox.shrink();
 
     return Container(
       decoration: BoxDecoration(
-        color: _stepsBg, // E6EAEB
+        color: _stepsBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _borderDotted, // 8AA0A1
-          width: 1,
-        ),
+        border: Border.all(color: _borderDotted, width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           for (int i = 0; i < steps.length; i++) ...[
-            _StepRow(step: steps[i]),
+            _StepRow(
+              step: steps[i],
+              size: iconSize,
+              pad: avatarPadding,
+            ),
             if (i < steps.length - 1) const SizedBox(height: 16),
           ]
         ],
@@ -518,47 +469,61 @@ class _InviteStepsBox extends StatelessWidget {
   }
 }
 
+
 // --- 8. MODIFIED: _StepRow now takes a FlowStep ---
 class _StepRow extends StatelessWidget {
   final FlowStep step;
-  const _StepRow({required this.step});
+  final double size; // container diameter
+  final double pad;  // inner padding for the image
+
+  const _StepRow({
+    required this.step,
+    this.size = 56,
+    this.pad = 8,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasImg = (step.avatar != null && step.avatar!.isNotEmpty);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 4,
-                offset: Offset(0, 0),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(size / 2),
+            border: Border.all(color: _borderGrey),
+            boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 4)],
           ),
           alignment: Alignment.center,
-          // --- Use NetworkImage for dynamic avatar ---
-          child: (step.avatar != null && step.avatar!.isNotEmpty)
-              ? Image.network(
-            step.avatar!,
-            width: 24,
-            height: 24,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) =>
-            const Icon(Icons.link, size: 24, color: _tealHeader),
+          child: hasImg
+              ? Padding(
+            padding: EdgeInsets.all(pad),
+            child: Image.network(
+              step.avatar!,
+              width: size - pad * 2,
+              height: size - pad * 2,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.link, size: size * 0.45, color: _tealHeader),
+            ),
           )
-              : const Icon(Icons.link, size: 24, color: _tealHeader),
+              : Text(
+            step.title.isNotEmpty ? step.title[0].toUpperCase() : '•',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _tealHeader,
+              fontSize: size * 0.38, // scale text with container
+            ),
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            step.title, // <-- Use dynamic title
+            step.title,
             style: const TextStyle(
               color: _textPrimary,
               fontSize: 16,
@@ -573,57 +538,102 @@ class _StepRow extends StatelessWidget {
   }
 }
 
+class _FaqItem extends StatelessWidget {
+  final Faq faq;
+  final bool expanded;
+  final VoidCallback onToggle;
+  const _FaqItem({required this.faq, required this.expanded, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // left: question + animated answer
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(faq.question,
+                      style: const TextStyle(
+                        color: _textPrimary, fontSize: 18, fontFamily: 'Roboto', fontWeight: FontWeight.w600, height: 1.3,
+                      )),
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox.shrink(),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        faq.answer,
+                        style: const TextStyle(
+                          color: _textSecondary, fontSize: 16, fontFamily: 'Roboto', fontWeight: FontWeight.w400, height: 1.3,
+                        ),
+                      ),
+                    ),
+                    crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 220),
+                    sizeCurve: Curves.easeInOutCubic,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // right: animated +/- icon
+            InkWell(
+              onTap: onToggle,
+              child: AnimatedRotation(
+                duration: const Duration(milliseconds: 200),
+                turns: expanded ? 0.25 : 0, // quarter turn for a playful hint
+                child: Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _tealHeader, width: 2),
+                  ),
+                  child: Center(
+                    child: Icon(expanded ? Icons.remove : Icons.add, size: 16, color: _tealHeader),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // --- 9. MODIFIED: _FaqSection now takes dynamic data ---
 class _FaqSection extends StatelessWidget {
   final List<Faq> faqs;
-  final ReferralSummaryController controller; // To access expandedFaqIndex
-
+  final ReferralSummaryController controller;
   const _FaqSection({required this.faqs, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    if (faqs.isEmpty) {
-      return const SizedBox.shrink(); // Don't show if no FAQs
-    }
+    if (faqs.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Frequently asked questions',
-          style: TextStyle(
-            color: _textPrimary,
-            fontSize: 18,
-            fontFamily: 'Roboto',
-            fontWeight: FontWeight.w600,
-            height: 1.3,
-          ),
-        ),
+        const Text('Frequently asked questions',
+            style: TextStyle(color: _textPrimary, fontSize: 18, fontFamily: 'Roboto', fontWeight: FontWeight.w600, height: 1.3)),
         const SizedBox(height: 8),
-        const Text(
-          'Everything you need to know about the order and credit',
-          style: TextStyle(
-            color: _textSecondary,
-            fontSize: 14,
-            fontFamily: 'Roboto',
-            fontWeight: FontWeight.w400,
-            height: 1.3,
-          ),
-        ),
+        const Text('Everything you need to know about the order and credit',
+            style: TextStyle(color: _textSecondary, fontSize: 14, fontFamily: 'Roboto', fontWeight: FontWeight.w400, height: 1.3)),
         const SizedBox(height: 24),
 
-        // --- Loop over dynamic FAQs ---
         for (int i = 0; i < faqs.length; i++) ...[
           Obx(() {
-            final isExpanded = controller.expandedFaqIndex.value == i;
-            return isExpanded
-                ? _FaqExpandedItem(
+            final expanded = controller.expandedFaqIndex.value == i;
+            return _FaqItem(
               faq: faqs[i],
-              onTap: () => controller.toggleFaq(i),
-            )
-                : _FaqCollapsedItem(
-              faq: faqs[i],
-              onTap: () => controller.toggleFaq(i),
+              expanded: expanded,
+              onToggle: () => controller.toggleFaq(i),
             );
           }),
           if (i < faqs.length - 1) const _FaqDivider(),
@@ -632,6 +642,7 @@ class _FaqSection extends StatelessWidget {
     );
   }
 }
+
 
 class _FaqDivider extends StatelessWidget {
   const _FaqDivider();

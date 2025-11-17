@@ -6,6 +6,9 @@ import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
 import 'package:grocer_ai/features/auth/data/auth_repository.dart';
 
+import '../onboarding/location/location_controller.dart' as loc;
+import 'auth_controller.dart';
+
 class SignUpController extends GetxController {
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
@@ -61,46 +64,51 @@ class SignUpController extends GetxController {
     try {
       loading.value = true;
 
-      // 🔹 Actually capture the returned tokens
       final tokens = await _repo.register(
         name: nameCtrl.text.trim(),
         email: emailCtrl.text.trim(),
         password: passCtrl.text,
-        referralCode: referralCtrl.text.trim().isEmpty
-            ? null
-            : referralCtrl.text.trim(),
-        mobileNumber: phoneCtrl.text.trim().isEmpty
-            ? null
-            : phoneCtrl.text.trim(),
+        referralCode: referralCtrl.text.trim().isEmpty ? null : referralCtrl.text.trim(),
+        mobileNumber: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
       );
 
-      // 🔹 Persist the tokens again just to be sure (optional safety)
+      // persist + inject like login
+      Get.find<AuthController>().loginSuccess(tokens.accessToken, tokens.refreshToken);
       await _box.write('auth_token', tokens.accessToken);
       await _box.write('refresh_token', tokens.refreshToken);
-
-      // 🔹 Inject into DioClient immediately for in-memory auth
       final dio = Get.find<DioClient>();
       dio.dio.options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
 
-      // ✅ Now user is fully authenticated, go to onboarding
-      Get.offAllNamed(Routes.locationPermission);
+      // 🔒 Enforce location gate for **SIGNUP**
+      final lc = Get.isRegistered<loc.LocationController>()
+          ? Get.find<loc.LocationController>()
+          : Get.put(loc.LocationController());
+
+      final ok = await lc.enforceLocationGate(origin: loc.LocationFlowOrigin.signup);
+      if (!ok) {
+        // We already navigated into the permission UI.
+        // After user allows & we save the location, LocationController will
+        // auto-route to Routes.prefsGrocers for signup flow. Do nothing here.
+        return;
+      }
+
+      // If permission + saved location already exist, go to prefs now.
+      Get.offAllNamed(Routes.prefsGrocers);
+
     } on ApiFailure catch (e) {
       loading.value = false;
 
       final emailMsg = e.firstFor('email');
       final passMsg = e.firstFor('password');
       final nameMsg = e.firstFor('name');
-      final refMsg = e.firstFor('referral_code');
+      final refMsg  = e.firstFor('referral_code');
 
       if (emailMsg != null) emailError.value = emailMsg;
-      if (passMsg != null) passError.value = passMsg;
-      if (nameMsg != null) nameError.value = nameMsg;
-      if (refMsg != null) referralErr.value = refMsg;
+      if (passMsg  != null) passError.value  = passMsg;
+      if (nameMsg  != null) nameError.value  = nameMsg;
+      if (refMsg   != null) referralErr.value = refMsg;
 
-      if (emailMsg == null &&
-          passMsg == null &&
-          nameMsg == null &&
-          refMsg == null) {
+      if (emailMsg == null && passMsg == null && nameMsg == null && refMsg == null) {
         Get.snackbar('Sign Up failed', e.message);
       }
     } catch (e) {
@@ -110,7 +118,6 @@ class SignUpController extends GetxController {
       loading.value = false;
     }
   }
-
   // Optional placeholders for social taps (keeps your UI callbacks intact)
   void google() => Get.snackbar('Google', 'Continue with Google');
   void facebook() => Get.snackbar('Facebook', 'Continue with Facebook');

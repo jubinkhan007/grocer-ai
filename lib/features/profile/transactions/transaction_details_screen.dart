@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/simple/get_view.dart';
 import 'package:grocer_ai/features/profile/transactions/transaction_controller.dart';
 
+import '../../../shell/main_shell.dart';
+import '../../../shell/main_shell_controller.dart';
 import '../../shared/teal_app_bar.dart';
 import 'model/transaction_model.dart';
 
@@ -198,6 +200,28 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ? 'TXN ID: ${tx.transactionId}'
               : 'TXN ID: #${tx.id}',
           showBack: true,
+          onBack: () async {
+            // 1) Try to pop THIS page
+            final didPop = await Navigator.of(context).maybePop();
+            if (didPop) return;
+
+            // 2) If inside MainShell, try the current tab’s nested navigator
+            if (Get.isRegistered<MainShellController>()) {
+              final shell = Get.find<MainShellController>();
+              final i = shell.current.value;
+              final nav = shell.navKeys[i].currentState;
+              if (nav?.canPop() ?? false) {
+                nav!.pop();
+                return;
+              }
+              // 3) Nothing to pop — rebuild shell on same tab
+              Get.offAll(() => MainShell(initialIndex: i));
+              return;
+            }
+
+            // 4) Last resort
+            Get.offAll(() => MainShell(initialIndex: 0));
+          },
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -487,11 +511,50 @@ class _OrderListItemPriceOnly extends StatelessWidget {
   }
 }
 
+
+class _RightQtyReadOnly extends StatelessWidget {
+  final String qtyText;
+  const _RightQtyReadOnly({required this.qtyText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // shadow to match the price block’s soft glow
+        Container(
+          decoration: const BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: _Palette.priceShadow,
+                blurRadius: 30,
+                offset: Offset(0, 15),
+              ),
+            ],
+          ),
+          child: Text(
+            qtyText, // e.g. "2"
+            textAlign: TextAlign.right,
+            style: _TextStyles.qtyNumber,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Qty',
+          style: _TextStyles.itemQtyLine,
+          textAlign: TextAlign.right,
+        ),
+      ],
+    );
+  }
+}
+
+
 class _OrderListItemWithQty extends StatelessWidget {
   final String title;
   final String metaLeft;
   final String metaRight;
-  final String qtyText; // the number in the middle ("2", "5")
+  final String qtyText; // "2", "5"
 
   const _OrderListItemWithQty({
     required this.title,
@@ -508,10 +571,8 @@ class _OrderListItemWithQty extends StatelessWidget {
         metaLeft: metaLeft,
         metaRight: metaRight,
       ),
-      right: _RightQtyBlock(qtyText: qtyText),
-      // NOTE: in the mock, these "with qty" rows *do not* show
-      // that thin vertical divider line. We'll follow that.
-      showDivider: false,
+      right: _RightQtyReadOnly(qtyText: qtyText),
+      showDivider: false, // stays false per your mock
     );
   }
 }
@@ -687,94 +748,94 @@ class _RightPriceBlock extends StatelessWidget {
   }
 }
 
-// Right side Quantity control block: [-]  qty  [+]
-class _RightQtyBlock extends StatelessWidget {
-  final String qtyText;
-  const _RightQtyBlock({required this.qtyText});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _QtyStepButton(
-          icon: Icons.remove,
-          onTap: () {
-            // hook up later
-          },
-        ),
-        const SizedBox(width: 8),
-        Container(
-          decoration: const BoxDecoration(
-            // just shadow around text number, no pill bg in mock
-            boxShadow: [
-              BoxShadow(
-                color: _Palette.priceShadow,
-                blurRadius: 30,
-                offset: Offset(0, 15),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.zero,
-          child: SizedBox(
-            width: 24,
-            child: Text(
-              qtyText,
-              textAlign: TextAlign.center,
-              style: _TextStyles.qtyNumber,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        _QtyStepButton(
-          icon: Icons.add,
-          onTap: () {
-            // hook up later
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// The +/- rounded pill (20x20 visual in Figma, border #33595B, bg #E6EAEB)
-class _QtyStepButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _QtyStepButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: _Palette.qtyPillBg,
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(width: 1, color: _Palette.qtyPillBorder),
-          boxShadow: const [
-            BoxShadow(
-              color: _Palette.priceShadow,
-              blurRadius: 30,
-              offset: Offset(0, 15),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 14,
-          color: _Palette.bgHeaderBar,
-        ),
-      ),
-    );
-  }
-}
+// // Right side Quantity control block: [-]  qty  [+]
+// class _RightQtyBlock extends StatelessWidget {
+//   final String qtyText;
+//   const _RightQtyBlock({required this.qtyText});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Row(
+//       children: [
+//         _QtyStepButton(
+//           icon: Icons.remove,
+//           onTap: () {
+//             // hook up later
+//           },
+//         ),
+//         const SizedBox(width: 8),
+//         Container(
+//           decoration: const BoxDecoration(
+//             // just shadow around text number, no pill bg in mock
+//             boxShadow: [
+//               BoxShadow(
+//                 color: _Palette.priceShadow,
+//                 blurRadius: 30,
+//                 offset: Offset(0, 15),
+//               ),
+//             ],
+//           ),
+//           padding: EdgeInsets.zero,
+//           child: SizedBox(
+//             width: 24,
+//             child: Text(
+//               qtyText,
+//               textAlign: TextAlign.center,
+//               style: _TextStyles.qtyNumber,
+//             ),
+//           ),
+//         ),
+//         const SizedBox(width: 8),
+//         _QtyStepButton(
+//           icon: Icons.add,
+//           onTap: () {
+//             // hook up later
+//           },
+//         ),
+//       ],
+//     );
+//   }
+// }
+//
+// // The +/- rounded pill (20x20 visual in Figma, border #33595B, bg #E6EAEB)
+// class _QtyStepButton extends StatelessWidget {
+//   final IconData icon;
+//   final VoidCallback onTap;
+//   const _QtyStepButton({
+//     required this.icon,
+//     required this.onTap,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       behavior: HitTestBehavior.opaque,
+//       child: Container(
+//         width: 20,
+//         height: 20,
+//         decoration: BoxDecoration(
+//           color: _Palette.qtyPillBg,
+//           borderRadius: BorderRadius.circular(40),
+//           border: Border.all(width: 1, color: _Palette.qtyPillBorder),
+//           boxShadow: const [
+//             BoxShadow(
+//               color: _Palette.priceShadow,
+//               blurRadius: 30,
+//               offset: Offset(0, 15),
+//             ),
+//           ],
+//         ),
+//         alignment: Alignment.center,
+//         child: Icon(
+//           icon,
+//           size: 14,
+//           color: _Palette.bgHeaderBar,
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 /// ---------------------------------------------------------------------------
 /// BOTTOM NAV BAR

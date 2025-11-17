@@ -13,6 +13,7 @@ import '../features/notification/controllers/notification_controller.dart';
 import '../features/notification/services/notification_service.dart';
 import '../features/offer/controllers/offer_controller.dart';
 import '../features/offer/services/offer_service.dart';
+import '../features/onboarding/location/location_controller.dart';
 import '../features/onboarding/location/location_repository.dart';
 import '../features/orders/controllers/order_controller.dart';
 import '../features/orders/controllers/past_order_details_controller.dart';
@@ -69,7 +70,7 @@ class AppBindings extends Bindings {
     // --- 3. ADD LocationRepository ---
     Get.lazyPut<LocationRepository>(() => LocationRepository(Get.find<DioClient>()), fenix: true);
     // --- END ADD ---
-
+    Get.lazyPut<LocationController>(() => LocationController(), fenix: true);
 
     // Register service BEFORE controller
     Get.lazyPut<ProfileService>(

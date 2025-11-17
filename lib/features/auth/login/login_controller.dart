@@ -6,6 +6,7 @@ import 'package:grocer_ai/core/theme/network/dio_client.dart';
 import 'package:grocer_ai/core/theme/network/error_mapper.dart';
 import 'package:grocer_ai/features/auth/data/auth_repository.dart';
 
+import '../../onboarding/location/location_controller.dart';
 import '../auth_controller.dart';
 
 class LoginController extends GetxController {
@@ -59,20 +60,27 @@ class LoginController extends GetxController {
       loading.value = true;
       final tokens = await _repo.login(email: email, password: pass);
 
-      // Update the central AuthController state
       Get.find<AuthController>().loginSuccess(tokens.accessToken, tokens.refreshToken);
-      // Persist tokens again just to be safe
       await _box.write('auth_token', tokens.accessToken);
       await _box.write('refresh_token', tokens.refreshToken);
 
-      // Inject token into Dio for live session use
       final dio = Get.find<DioClient>();
       dio.dio.options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
 
       loading.value = false;
 
-      // ✅ Navigate to your shell Home screen
+      // 🔒 Location gate — block progression until permission + a saved location exist
+      final loc = Get.isRegistered<LocationController>()
+          ? Get.find<LocationController>()
+          : Get.put(LocationController());
+
+      final ok = await loc.enforceLocationGate(origin: LocationFlowOrigin.login);
+      if (!ok) return;                   // user is in the location flow
       Get.offAllNamed(Routes.main);
+
+      // ✅ All good: proceed to your home/shell
+      Get.offAllNamed(Routes.main);
+
     } on ApiFailure catch (e) {
       loading.value = false;
 

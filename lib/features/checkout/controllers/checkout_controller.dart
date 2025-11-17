@@ -36,7 +36,7 @@ class CheckoutController extends GetxController {
   final selectedLocationId = RxnInt();
   final selectedPaymentMethodId = RxnInt();
   final redemptionAmount = 0.0.obs;
-  final fulfillmentMethod = 'delivery'.obs; // Matches UI default
+  final fulfillmentMethod = 'home_delivery'.obs; // or 'store_pickup' // Matches UI default
   final creditEnabled = false.obs;
   final isSavingLocation = false.obs;
 
@@ -100,11 +100,20 @@ class CheckoutController extends GetxController {
     }
   }
 
+  // Helpers to translate
+  String get uiFulfillment =>
+      (fulfillmentMethod.value == 'home_delivery') ? 'delivery' : 'pickup';
+
+
   // --- UI Actions ---
   void selectTimeSlot(int id) => selectedSlotId.value = id;
   void selectLocation(int id) => selectedLocationId.value = id;
   void selectPaymentMethod(int id) => selectedPaymentMethodId.value = id;
-  void setFulfillmentMethod(String method) => fulfillmentMethod.value = method;
+  // UI passes 'delivery' or 'pickup'
+  void setFulfillmentMethod(String uiValue) {
+    fulfillmentMethod.value =
+    (uiValue == 'delivery') ? 'home_delivery' : 'store_pickup';
+  }
   void toggleCredit(bool enabled) => creditEnabled.value = enabled;
 
   // --- Helper for TimingCard ---

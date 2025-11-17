@@ -283,7 +283,10 @@ class OrderTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data.brand,
+                  data.brand.replaceAll(RegExp(r'\s+'), ' ').trim(),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF33595B),
                     fontSize: 16,

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../checkout/utils/design_tokens.dart';
 import '../../../preferences/preferences_controller.dart';
+import '../../../shared/teal_app_bar.dart';
 
 /// ===== FIGMA TOKENS / COLORS =====
 const _bgPage = Color(0xFFF4F6F6); // page background
@@ -23,15 +25,21 @@ class PreferencesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.find<PreferencesController>();
 
-    // Set the system status bar color to match the app bar
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: _tealHeader, // ⬅️ same teal
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-    ));
-
-
     return Scaffold(
+      // Reusable teal status + header (handles SystemChrome too)
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(116), // matches TealTitleAppBar
+        child: Obx(() {
+          final isEditing = c.isEditing.value;
+          return TealTitleAppBar(
+            title: 'Preferences',
+            showBack: true,
+            onBack: () => Navigator.of(context).pop(),
+            trailing: isEditing ? null : _EditPill(onTap: () => c.isEditing.value = true),
+          );
+        }),
+      ),
+
       backgroundColor: _bgPage,
       body: Obx(() {
         if (c.loading.value) {
@@ -49,13 +57,7 @@ class PreferencesScreen extends StatelessWidget {
 
         return Column(
           children: [
-            _PreferencesHeader(
-              isEditing: isEditing,
-              onBack: () => Navigator.of(context).pop(),
-              onTapEdit: () {
-                if (!c.isEditing.value) c.isEditing.value = true;
-              },
-            ),
+            // (Header removed — appBar now handles it)
 
             Expanded(
               child: LayoutBuilder(
@@ -63,8 +65,7 @@ class PreferencesScreen extends StatelessWidget {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                     child: ConstrainedBox(
-                      constraints:
-                      BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -78,10 +79,9 @@ class PreferencesScreen extends StatelessWidget {
                               fontFamily: 'Roboto',
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
-                          /// ===== 1) HOUSEHOLD (only if API provides it) =====
+                          // ----- your existing cards (unchanged) -----
                           if (c.house != null) ...[
                             _CardShell(
                               child: Column(
@@ -98,7 +98,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          /// ===== 2) DIET =====
                           if (c.diet != null) ...[
                             _CardShell(
                               child: Column(
@@ -127,7 +126,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          /// ===== 3) CUISINE =====
                           if (c.cuisine != null) ...[
                             _CardShell(
                               child: Column(
@@ -156,7 +154,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          /// ===== 4) ALLERGIES (optional per API) =====
                           if (c.allergies != null) ...[
                             _CardShell(
                               child: Column(
@@ -165,9 +162,9 @@ class PreferencesScreen extends StatelessWidget {
                                   const _CardTitle('Do you have any allergies?'),
                                   const SizedBox(height: 16),
                                   _ChipsWrap(
-                                    key: ValueKey('allergy_$allergyRev'), // <-- ADD KEY
+                                    key: ValueKey('allergy_$allergyRev'),
                                     options: c.allergies!.options,
-                                    selectedIds: c.selectedAllergyIds,     // <-- reactive RxSet
+                                    selectedIds: c.selectedAllergyIds,
                                     editable: isEditing,
                                     onTapChip: (opt) {
                                       if (!isEditing) return;
@@ -185,7 +182,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          /// ===== 5) FREQUENCY =====
                           if (c.frequency != null) ...[
                             _CardShell(
                               child: Column(
@@ -197,8 +193,7 @@ class PreferencesScreen extends StatelessWidget {
                                     builder: (_) {
                                       final selectedFreqIds = <int>{};
                                       if (c.selectedFrequencyId.value != null) {
-                                        selectedFreqIds
-                                            .add(c.selectedFrequencyId.value!);
+                                        selectedFreqIds.add(c.selectedFrequencyId.value!);
                                       }
                                       return _ChipsWrap(
                                         key: ValueKey('freq_$freqRev'),
@@ -220,7 +215,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          /// ===== 6) BUDGET (Spending limit per week) =====
                           if (c.budget != null) ...[
                             _CardShell(
                               child: Column(
@@ -237,14 +231,12 @@ class PreferencesScreen extends StatelessWidget {
                                     },
                                     editable: isEditing,
                                     singleSelect: true,
-                                    // show range_text when label is null
                                     onTapChip: (opt) {
                                       if (!isEditing) return;
                                       c.selectedBudgetId.value = opt.id;
                                       c.submitBudget();
                                     },
-                                    labelResolver: (opt) =>
-                                    opt.label ?? (opt.rangeText ?? ''),
+                                    labelResolver: (opt) => opt.label ?? (opt.rangeText ?? ''),
                                   ),
                                 ],
                               ),
@@ -252,11 +244,6 @@ class PreferencesScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                           ],
 
-                          // Note: restrictions, spice, cook-time, comfort
-                          // are intentionally omitted because the API does not
-                          // return them. We only render what exists.
-
-                          // Save pill at the bottom in edit mode
                           if (isEditing) ...[
                             const SizedBox(height: 24),
                             _SaveButtonPill(
@@ -268,16 +255,12 @@ class PreferencesScreen extends StatelessWidget {
                                   c.submitFrequency,
                                   c.submitBudget,
                                   c.submitAllergies,
-                                  // IMPORTANT: do not enforce mandatory when saving from the footer,
-                                  // because this section isn’t shown in the UI.
                                       () => c.submitGrocers(enforce: false),
                                 ];
-
                                 for (final step in steps) {
                                   final ok = await step();
-                                  if (!ok) return; // an error snackbar was already shown
+                                  if (!ok) return;
                                 }
-
                                 c.isEditing.value = false;
                                 Get.snackbar('Saved', 'Preferences updated successfully');
                               },
@@ -395,6 +378,44 @@ class _PreferencesHeader extends StatelessWidget {
     );
   }
 }
+
+class _EditPill extends StatelessWidget {
+  const _EditPill({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        decoration: BoxDecoration(
+          color: headerTeal, // same teal; text is white
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.edit, size: 16, color: appBarTextColor),
+            SizedBox(width: 4),
+            Text(
+              'Edit',
+              style: TextStyle(
+                color: appBarTextColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+                fontFamily: 'Roboto',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 
 /// ======================================================================
 /// CARD WRAPPER

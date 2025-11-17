@@ -35,6 +35,7 @@ import 'package:grocer_ai/features/auth/signup_view.dart';
 
 import '../features/help/views/help_support_screen.dart';
 import '../features/offer/views/offer_screen.dart';
+import '../features/onboarding/location/location_denied_view.dart';
 import '../features/orders/bindings/order_binding.dart';
 import '../features/orders/controllers/past_order_details_controller.dart';
 import '../features/orders/services/order_service.dart';
@@ -65,6 +66,7 @@ abstract class Routes {
   // ---
 
   static const locationPermission = '/locationPermission';
+  static const locationDenied = '/locationDenied';
   static const orders = '/orders';
   static const profile = '/profile';
   static const main = '/shell';
@@ -127,6 +129,11 @@ class AppPages {
       name: Routes.locationPermission,
       page: () => const LocationPermissionView(),
       binding: LocationPermissionBinding(),
+    ),
+    GetPage(
+      name: Routes.locationDenied,
+      page: () => const LocationDeniedView(),
+      binding: LocationPermissionBinding(), // Re-uses the same controller
     ),
     GetPage(
       name: Routes.prefsGrocers,

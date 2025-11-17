@@ -6,8 +6,12 @@ import 'package:grocer_ai/features/orders/bindings/past_order_details_binding.da
 import 'package:grocer_ai/features/orders/models/order_list_model.dart';
 import 'package:grocer_ai/features/orders/models/order_models.dart';
 import 'package:grocer_ai/features/orders/views/past_order_details_screen.dart';
+import '../../../shell/main_shell.dart';
+import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../widgets/ff_bottom_nav.dart';
+import '../../home/dashboard_screen.dart';
+import '../../shared/teal_app_bar.dart';
 import '../controllers/order_controller.dart';
 import '../widgets/orders_widgets.dart';
 import 'order_details_screen.dart';
@@ -72,32 +76,61 @@ class OrderScreen extends GetView<OrderController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6), // Figma bg
+
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(116),
+        child: Obx(() {
+          final showRange = controller.segIndex.value == 1;
+          return TealTitleAppBar(
+            title: 'Order',
+            showBack: true,
+            onBack: () {
+              // Prefer switching the MainShell tab to Dashboard (index 0)
+              if (Get.isRegistered<MainShellController>()) {
+                Get.find<MainShellController>().goTo(0);
+              } else {
+                // Fallback: rebuild the shell on Dashboard
+                Get.offAll(() => MainShell(initialIndex: 0));
+              }
+            },
+            trailing: showRange
+                ? _RangeDropdownButton(
+              text: controller.historyRange.value,
+              onSelected: (picked) {
+                if (picked != null) controller.setHistoryRange(picked);
+              },
+            )
+                : null,
+          );
+        }),
+      ),
+
       body: CustomScrollView(
         slivers: [
           // ... (status bar, header, and segmented control are unchanged) ...
-          SliverToBoxAdapter(
-            child: AnnotatedRegion<SystemUiOverlayStyle>(
-              value: SystemUiOverlayStyle.light, // white status icons
-              child: Container(
-                height: MediaQuery.of(context).padding.top,
-                color: kTeal,
-              ),
-            ),
-          ),
-          Obx(() => SliverPersistentHeader(
-            pinned: true,
-            delegate: _OrderHeader(
-              height: 64,
-              title: 'Order',
-              showRange: controller.segIndex.value == 1,
-              rangeText: controller.historyRange.value,
-              onPickRange: (picked) {
-                if (picked != null) {
-                  controller.setHistoryRange(picked);
-                }
-              },
-            ),
-          )),
+          // SliverToBoxAdapter(
+          //   child: AnnotatedRegion<SystemUiOverlayStyle>(
+          //     value: SystemUiOverlayStyle.light, // white status icons
+          //     child: Container(
+          //       height: MediaQuery.of(context).padding.top,
+          //       color: kTeal,
+          //     ),
+          //   ),
+          // ),
+          // Obx(() => SliverPersistentHeader(
+          //   pinned: true,
+          //   delegate: _OrderHeader(
+          //     height: 64,
+          //     title: 'Order',
+          //     showRange: controller.segIndex.value == 1,
+          //     rangeText: controller.historyRange.value,
+          //     onPickRange: (picked) {
+          //       if (picked != null) {
+          //         controller.setHistoryRange(picked);
+          //       }
+          //     },
+          //   ),
+          // )),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),

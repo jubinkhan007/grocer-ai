@@ -106,8 +106,8 @@ class CheckoutScreen extends GetView<CheckoutController> {
 
                     // 4. Get Stuffs by (pickup / delivery pills)
                     FulfillmentMethodCard(
-                      selected: controller.fulfillmentMethod.value,
-                      onSelect: (v) => controller.setFulfillmentMethod(v),
+                      selected: controller.uiFulfillment,   // 'delivery' / 'pickup' for the pills
+                      onSelect: controller.setFulfillmentMethod, // converts to API enum internally
                     ),
 
                     const SizedBox(height: 20),

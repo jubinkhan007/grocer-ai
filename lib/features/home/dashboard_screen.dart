@@ -391,6 +391,9 @@ class _PromoCard extends StatelessWidget {
 class _LastOrderCard extends StatelessWidget {
   const _LastOrderCard({required this.order});
   final Order order;
+  String _oneLine(String? s) =>
+      (s ?? 'Unknown Store').replaceAll(RegExp(r'\s+'), ' ').trim();
+
 
   order_widget.OrderStatus _mapStatusEnum(String statusName) {
     switch (statusName.toLowerCase()) {
@@ -437,7 +440,7 @@ class _LastOrderCard extends StatelessWidget {
 
     final tileData = order_widget.OrderTileData(
       logo: _getLogoAsset(order.provider?.name),
-      brand: order.provider?.name ?? 'Unknown Store',
+      brand: _oneLine(order.provider?.name), // <-- use single-line text
       status: _mapStatusEnum(order.status),
       priceNow: '\$${price.toStringAsFixed(2)}',
       priceOld: '\$${oldPrice.toStringAsFixed(2)}',

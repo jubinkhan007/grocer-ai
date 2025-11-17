@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shell/main_shell.dart';
+import '../../../shell/main_shell_controller.dart';
 import '../../../ui/theme/app_theme.dart';
+import '../../shared/teal_app_bar.dart';
 import '../controllers/notification_controller.dart';
 import '../models/notification_model.dart';
 
@@ -13,10 +16,31 @@ class NotificationScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: const Text('Notification'),
-        backgroundColor: AppColors.teal,
-        foregroundColor: Colors.white,
+      appBar: TealTitleAppBar(
+        title: 'Notification',
+        showBack: true,
+        onBack: () async {
+          // Try to pop THIS page using the local context
+          final didPop = await Navigator.of(context).maybePop();
+          if (didPop) return;
+
+          // If we're inside MainShell, try popping the current tab's stack
+          if (Get.isRegistered<MainShellController>()) {
+            final shell = Get.find<MainShellController>();
+            final i = shell.current.value;
+            final nav = shell.navKeys[i].currentState;
+            if (nav?.canPop() ?? false) {
+              nav!.pop();
+              return;
+            }
+            // Nothing to pop anywhere — optional final fallback: rebuild shell on same tab
+            Get.offAll(() => MainShell(initialIndex: i));
+            return;
+          }
+
+          // Not in shell and nothing to pop — hard fallback to shell home
+          Get.offAll(() => MainShell(initialIndex: 0));
+        },
       ),
       body: Obx(() {
         if (controller.isLoading.value) {

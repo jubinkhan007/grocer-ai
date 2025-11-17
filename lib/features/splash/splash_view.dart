@@ -1,3 +1,5 @@
+// lib/features/splash/splash_view.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

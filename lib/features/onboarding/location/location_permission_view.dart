@@ -2,19 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:grocer_ai/features/onboarding/location/location_controller.dart';
 
+
+LocationController _loc() =>
+    Get.isRegistered<LocationController>()
+        ? Get.find<LocationController>()
+        : Get.put(LocationController());
 /// ---- Brand colors used across the mockups ----
 const _bg = Color(0xFFF1F4F6);
 const _teal = Color(0xFF0C3E3D);
 const _text = Color(0xFF33363E);
 const _sub = Color(0xFF6B737C);
 const _divider = Color(0xFFE1E6EA);
+const _dialogRadius = 28.0;     // card corner
+const _imgRadius    = 18.0;     // image corner
+const _hPad         = 18.0;     // left/right padding inside card
+const _topPad       = 18.0;     // top padding
+const _between1     = 18.0;     // space image -> first paragraph
+const _between2     = 14.0;     // space para1 -> para2
+const _dividerGap   = 6.0;
 
 class LocationPermissionView extends StatelessWidget {
   const LocationPermissionView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<LocationController>();
+    final c = _loc();
     final w = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -119,7 +131,7 @@ class LocationPermissionView extends StatelessWidget {
   }
 }
 
-/// ---------------- Collapsed accuracy dialog (Image 1 & 4) ----------------
+/// ---------------- Collapsed accuracy dialog (Image 1) ----------------
 void _showAccuracyCollapsed(BuildContext context) {
   showDialog(
     context: context,
@@ -139,7 +151,7 @@ void _showAccuracyCollapsed(BuildContext context) {
                   const Expanded(
                     child: Text(
                       'For a better experience, your device will\n'
-                      'need to use Location Accuracy',
+                          'need to use Location Accuracy',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -148,33 +160,32 @@ void _showAccuracyCollapsed(BuildContext context) {
                       ),
                     ),
                   ),
+                  // ➜ EXPAND to the detailed dialog
                   IconButton(
+                    icon: const Icon(Icons.expand_more, color: _teal),
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      final c = Get.find<LocationController>();
-                      c.requestAndSaveLocation();
+                      // open the expanded version
+                      Future.microtask(() => _showAccuracyExpanded(context));
                     },
-                    icon: const Icon(Icons.expand_more, color: _teal),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               const Divider(color: _divider),
 
-              // Buttons row (like your mock)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // ➜ SHOW the “Turn on device location” card
                   TextButton(
-                    onPressed: Navigator.of(ctx).pop,
-                    child: const Text(
-                      'No thanks',
-                      style: TextStyle(
-                        color: _teal,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Future.microtask(() => _showTurnOnLocation(context));
+                    },
+                    child: const Text('No thanks',
+                        style: TextStyle(
+                            color: _teal, fontWeight: FontWeight.w700, fontSize: 18)),
                   ),
                   const SizedBox(width: 14),
                   TextButton(
@@ -183,14 +194,9 @@ void _showAccuracyCollapsed(BuildContext context) {
                       final c = Get.find<LocationController>();
                       c.requestAndSaveLocation();
                     },
-                    child: const Text(
-                      'Turn on',
-                      style: TextStyle(
-                        color: _teal,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                    child: const Text('Turn on',
+                        style: TextStyle(
+                            color: _teal, fontWeight: FontWeight.w700, fontSize: 18)),
                   ),
                 ],
               ),
@@ -221,7 +227,7 @@ void _showAccuracyExpanded(BuildContext context) {
                   const Expanded(
                     child: Text(
                       'For a better experience, your device will\n'
-                      'need to use Location Accuracy',
+                          'need to use Location Accuracy',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -230,13 +236,13 @@ void _showAccuracyExpanded(BuildContext context) {
                       ),
                     ),
                   ),
+                  // ➜ COLLAPSE back to the short dialog
                   IconButton(
+                    icon: const Icon(Icons.expand_less, color: _teal),
                     onPressed: () {
                       Navigator.of(ctx).pop();
-                      final c = Get.find<LocationController>();
-                      c.requestAndSaveLocation();
+                      Future.microtask(() => _showAccuracyCollapsed(context));
                     },
-                    icon: const Icon(Icons.expand_less, color: _teal),
                   ),
                 ],
               ),
@@ -244,16 +250,15 @@ void _showAccuracyExpanded(BuildContext context) {
 
               _bulletRow(Icons.place_outlined, 'Device location'),
               const SizedBox(height: 12),
-
               _bulletRow(
                 Icons.my_location_outlined,
                 'Location Accuracy, which provides more accurate location for '
-                'apps and services. To do this, Google periodically processes '
-                'information about device sensors and wireless signals from '
-                'your device to crowdsource wireless signal locations. These '
-                'are used without identifying you to improve location accuracy '
-                'and location-based services and to improve, provide and '
-                'maintain Google’s services.',
+                    'apps and services. To do this, Google periodically processes '
+                    'information about device sensors and wireless signals from '
+                    'your device to crowdsource wireless signal locations. These '
+                    'are used without identifying you to improve location accuracy '
+                    'and location-based services and to improve, provide and '
+                    'maintain Google’s services.',
               ),
 
               const SizedBox(height: 10),
@@ -261,16 +266,15 @@ void _showAccuracyExpanded(BuildContext context) {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // ➜ SHOW the “Turn on device location” card
                   TextButton(
-                    onPressed: Navigator.of(ctx).pop,
-                    child: const Text(
-                      'No thanks',
-                      style: TextStyle(
-                        color: _teal,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Future.microtask(() => _showTurnOnLocation(context));
+                    },
+                    child: const Text('No thanks',
+                        style: TextStyle(
+                            color: _teal, fontWeight: FontWeight.w700, fontSize: 18)),
                   ),
                   const SizedBox(width: 14),
                   TextButton(
@@ -279,14 +283,9 @@ void _showAccuracyExpanded(BuildContext context) {
                       final c = Get.find<LocationController>();
                       c.requestAndSaveLocation();
                     },
-                    child: const Text(
-                      'Turn on',
-                      style: TextStyle(
-                        color: _teal,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                    child: const Text('Turn on',
+                        style: TextStyle(
+                            color: _teal, fontWeight: FontWeight.w700, fontSize: 18)),
                   ),
                 ],
               ),
@@ -297,6 +296,114 @@ void _showAccuracyExpanded(BuildContext context) {
     },
   );
 }
+
+/// --------------- “Turn on device location” card (Image 3) ---------------
+void _showTurnOnLocation(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: true, // set false if you don’t want it dismissible
+    builder: (ctx) {
+      // Clamp text scaling so typography doesn't drift from Figma
+      final mq = MediaQuery.of(ctx);
+      final media = mq.copyWith(textScaler: const TextScaler.linear(1.0));
+
+      // Figma base is 375 → dialog content width = 375 - 48 = 327
+      const figmaDialogWidth = 327.0;
+
+      return MediaQuery(
+        data: media,
+        child: Dialog(
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_dialogRadius),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: figmaDialogWidth,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(_hPad, _topPad, _hPad, 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Illustration (exported from Figma; keep its 16:12 look)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(_imgRadius),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 12,
+                      child: Image.asset(
+                        'assets/images/pana.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: _between1),
+
+                  // Paragraph 1
+                  const Text(
+                    'We require your precise location to seamlessly connect '
+                        'you to nearby service providers.',
+                    style: TextStyle(
+                      fontSize: 18,          // Figma size
+                      height: 1.35,          // Figma line-height
+                      color: Color(0xFF33363E),
+                      fontWeight: FontWeight.w400,
+                      // fontFamily: 'Inter', // uncomment to force your Figma font
+                    ),
+                  ),
+
+                  const SizedBox(height: _between2),
+
+                  // Paragraph 2
+                  const Text(
+                    'Please turn on device location.',
+                    style: TextStyle(
+                      fontSize: 18,
+                      height: 1.25,
+                      color: Color(0xFF33363E),
+                      fontWeight: FontWeight.w400,
+                      // fontFamily: 'Inter',
+                    ),
+                  ),
+
+                  const SizedBox(height: _dividerGap),
+                  const Divider(color: Color(0xFFE1E6EA), height: 1),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 12),
+                        foregroundColor: Color(0xFF0C3E3D),
+                        textStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          // fontFamily: 'Inter',
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        Get.find<LocationController>().requestAndSaveLocation();
+                      },
+                      child: const Text('Try again'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 
 Widget _bulletRow(IconData icon, String text) {
   return Row(
@@ -314,74 +421,3 @@ Widget _bulletRow(IconData icon, String text) {
   );
 }
 
-/// --------------- “Turn on device location” card (Image 3) ---------------
-void _showTurnOnLocation(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (ctx) {
-      return Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Illustration
-              AspectRatio(
-                aspectRatio: 16 / 12,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset(
-                    'assets/images/illus_location_card.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'We require your precise location to seamlessly connect '
-                  'you to nearby service providers.',
-                  style: TextStyle(fontSize: 18, color: _text, height: 1.35),
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Please turn on device location.',
-                  style: TextStyle(fontSize: 18, color: _text),
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Divider(color: _divider),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    final c = Get.find<LocationController>();
-                    c.requestAndSaveLocation();
-                  },
-                  child: const Text(
-                    'Try again',
-                    style: TextStyle(
-                      color: _teal,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
